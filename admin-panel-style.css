@@ -1,0 +1,40 @@
+/* Reset Asal */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* STRUKTUR UTAMA (STICKY FOOTER SETUP) */
+body { 
+    font-family: sans-serif; 
+    background: #fdfbf7; 
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; 
+    margin: 0;
+}
+
+/* Hilangkan elemen Blogspot yang tak perlu */
+header, .widget-title { display: none !important; }
+b\:section:empty { display: none !important; }
+
+/* LOGIK PAPARAN */
+body.homepage-view #blog-content { display: none !important; }
+body.homepage-view #homepage-hero { display: flex !important; }
+
+/* SECTION UTAMA */
+#homepage-hero {
+    display: none;
+    flex: 1; 
+    flex-direction: column;
+    width: 100%;
+}
+
+#blog-content {
+    display: block;
+    width: 100%;
+    flex: 1;
+}
+
+/* WIDGET CONTAINER */
+#HTML1 { flex: 1; width: 100%; position: relative; } 
+
+/* STICKY FOOTER */
+#HTML2 { flex-shrink: 0; width: 100%; margin-top: auto; }
