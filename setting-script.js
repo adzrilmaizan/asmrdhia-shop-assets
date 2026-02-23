@@ -95,7 +95,11 @@ const SETTING = {
         btn.disabled = true;
         Swal.fire({ title: 'Menyimpan...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        const payload = { action: 'save_shop_settings' };
+        // --- TAMBAHAN KUNCI GHAIB DI SINI ---
+        const payload = { 
+            action: 'save_shop_settings',
+            admin_token: 'Adzril2!' 
+        };
         
         const keys = ['shop_name', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
         
