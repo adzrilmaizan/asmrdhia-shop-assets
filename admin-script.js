@@ -46,6 +46,7 @@ function handleLogout() {
 
 function confirmLogout() {
     localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem('admin_secret_token'); // PADAM TOKEN BILA LOGOUT
     document.getElementById('inp-user').value = '';
     document.getElementById('inp-pass').value = '';
     hideModal();
@@ -68,7 +69,7 @@ window.handleFakeShake = function() {
 };
 
 // --- 5. SUCCESS LOGIN ---
-function doLoginSuccess() {
+function doLoginSuccess(pass = '') {
     const btn = document.querySelector('#login-box button');
     const oldTxt = btn.innerText;
     btn.innerText = "ACCESSING...";
@@ -76,6 +77,10 @@ function doLoginSuccess() {
 
     setTimeout(() => {
         localStorage.setItem(SESSION_KEY, 'active');
+        if (pass) {
+            localStorage.setItem('admin_secret_token', pass); // SIMPAN TOKEN (PASSWORD)
+        }
+        
         toggleScreen('DASHBOARD');
         fetchStats(); 
 
@@ -294,6 +299,23 @@ document.addEventListener("DOMContentLoaded", () => {
     const modalCancel = document.getElementById('modal-cancel');
     const modalConfirm = document.getElementById('modal-confirm');
     const modalBackdrop = document.getElementById('modal-logout');
+    const loginBtn = document.querySelector('#login-box button');
+
+    // 🟢 TANGKAP DAN SAHKAN LOGIN DI SINI
+    if(loginBtn) {
+        loginBtn.onclick = function(e) {
+            e.preventDefault();
+            const user = document.getElementById('inp-user').value.trim();
+            const pass = document.getElementById('inp-pass').value;
+            
+            // Periksa ada isi kedua-dua kotak atau tak
+            if(pass && user) { 
+                doLoginSuccess(pass); 
+            } else { 
+                window.handleFakeShake(); 
+            }
+        };
+    }
 
     // Check Session
     if (localStorage.getItem(SESSION_KEY)) {
@@ -337,12 +359,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Secret Double Click (Bypass Login)
+    // Secret Double Click (Bypass Login) - Untuk kemudahan Developer testing sahaja
     if(secret) {
         secret.addEventListener('dblclick', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            doLoginSuccess();
+            // Bypass login tapi tanpa pass, so aksi simpan/padam mungkin kene reject dgn Worker
+            doLoginSuccess(); 
         });
         secret.addEventListener('mousedown', (e) => { 
             if (e.detail > 1) e.preventDefault(); 
