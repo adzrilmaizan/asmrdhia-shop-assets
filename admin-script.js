@@ -2,9 +2,11 @@
 const SESSION_KEY = "asmr_v3_session";
 const WORKER_URL = "https://shopapi.asmrdhia.com";
 
+// --- 1. TUKAR SKRIN ---
 function toggleScreen(screenName) {
     const elLogin = document.getElementById('screen-login');
     const elDash = document.getElementById('screen-dashboard');
+
     if (screenName === 'DASHBOARD') {
         elLogin.style.display = 'none';
         elDash.style.display = 'block';
@@ -14,6 +16,7 @@ function toggleScreen(screenName) {
     }
 }
 
+// --- 2. MODAL & LOGOUT FUNCTIONS ---
 function showModal() {
     const modal = document.getElementById('modal-logout');
     const content = document.getElementById('modal-content');
@@ -28,10 +31,12 @@ function hideModal() {
     setTimeout(() => { modal.style.display = 'none'; }, 300);
 }
 
-function handleLogout() { showModal(); }
+function handleLogout() {
+    showModal();
+}
 
-// LOGOUT: PENTING - Clear semua memori
 function confirmLogout() {
+    // PADAM SEMUA MEMORI BILA LOGOUT
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem('admin_secret_token');
     document.getElementById('inp-user').value = '';
@@ -40,6 +45,7 @@ function confirmLogout() {
     setTimeout(() => { toggleScreen('LOGIN'); }, 300);
 }
 
+// --- 3. ANIMASI GEGAR BILA SALAH ---
 window.handleFakeShake = function() {
     const box = document.getElementById('login-box');
     box.classList.remove('shake-now');
@@ -49,17 +55,20 @@ window.handleFakeShake = function() {
     if(passInput) { passInput.value = ''; passInput.focus(); }
 };
 
-// BERJAYA MASUK
+// --- 4. BERJAYA MASUK DASHBOARD ---
 function doLoginSuccess(pass = null) {
-    localStorage.setItem(SESSION_KEY, 'active'); 
-    // Hanya simpan password kalau ia didatangkan dari login rasmi
+    localStorage.setItem(SESSION_KEY, 'active'); // Kekalkan sesi aktif
+    
+    // Simpan token hanya jika login rasmi (bukan null)
     if (pass !== null && pass !== "") {
         localStorage.setItem('admin_secret_token', pass); 
     }
+    
     toggleScreen('DASHBOARD');
     fetchStats(); 
 }
 
+// --- 5. FETCH DATA DASHBOARD ---
 let globalOrders = []; 
 let globalShopName = "KEDAI SAYA";
 
@@ -70,20 +79,24 @@ async function fetchStats() {
             fetch(WORKER_URL + "?action=get_menu_data").then(r => r.json()),
             fetch(WORKER_URL + "?action=get_shop_settings").then(r => r.json())
         ]);
+
         const orders = o.orders || [];
         const products = p.menus || [];
         globalOrders = orders; 
         if (s.data && s.data.shop_name) globalShopName = s.data.shop_name;
+
         const pending = orders.filter(x => x.status === 'UNPAID' || x.status === 'PROCESSING').length;
         const now = new Date();
         const todayStr = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
         const sales = orders.filter(x => ['PAID', 'PROCESSING', 'COMPLETED'].includes(x.status) && x.date === todayStr).reduce((sum, x) => sum + parseFloat(x.total || 0), 0);
+
         if(document.getElementById('dash-pending')) document.getElementById('dash-pending').innerText = pending;
         if(document.getElementById('dash-products')) document.getElementById('dash-products').innerText = products.length;
         if(document.getElementById('dash-sales')) document.getElementById('dash-sales').innerText = `RM ${sales.toFixed(2)}`;
     } catch (e) { console.log('Error fetching stats:', e); }
 }
 
+// --- 6. REPORT MODULE ---
 const REPORT = {
     openModal: () => {
         const m = document.getElementById('modal-report'); const c = document.getElementById('report-content');
@@ -112,11 +125,24 @@ const REPORT = {
             const todayStr = REPORT.getLocalDateStr(new Date());
             const sourceData = globalOrders.filter(o => ['PAID', 'PROCESSING', 'COMPLETED'].includes(o.status));
 
-            if(range === 'today') { filtered = sourceData.filter(o => o.date === todayStr); } 
-            else if(range === '7') { const limitStr = REPORT.getLocalDateStr(new Date(Date.now() - (7 * 24 * 60 * 60 * 1000))); filtered = sourceData.filter(o => o.date >= limitStr); } 
-            else if(range === '30') { const limitStr = REPORT.getLocalDateStr(new Date(Date.now() - (30 * 24 * 60 * 60 * 1000))); filtered = sourceData.filter(o => o.date >= limitStr); } 
-            else if (range === 'month') { const mVal = document.getElementById('rpt-month').value; if(!mVal) throw new Error('Pilih bulan.'); filtered = sourceData.filter(o => o.date.startsWith(mVal)); } 
-            else if (range === 'custom') { const start = document.getElementById('rpt-start').value; const end = document.getElementById('rpt-end').value; if(!start || !end) throw new Error('Pilih tarikh.'); filtered = sourceData.filter(o => o.date >= start && o.date <= end); }
+            if(range === 'today') { 
+                filtered = sourceData.filter(o => o.date === todayStr); 
+            } else if(range === '7') { 
+                const limitStr = REPORT.getLocalDateStr(new Date(Date.now() - (7 * 24 * 60 * 60 * 1000))); 
+                filtered = sourceData.filter(o => o.date >= limitStr); 
+            } else if(range === '30') { 
+                const limitStr = REPORT.getLocalDateStr(new Date(Date.now() - (30 * 24 * 60 * 60 * 1000))); 
+                filtered = sourceData.filter(o => o.date >= limitStr); 
+            } else if (range === 'month') { 
+                const mVal = document.getElementById('rpt-month').value; 
+                if(!mVal) throw new Error('Pilih bulan.'); 
+                filtered = sourceData.filter(o => o.date.startsWith(mVal)); 
+            } else if (range === 'custom') { 
+                const start = document.getElementById('rpt-start').value; 
+                const end = document.getElementById('rpt-end').value; 
+                if(!start || !end) throw new Error('Pilih tarikh.'); 
+                filtered = sourceData.filter(o => o.date >= start && o.date <= end); 
+            }
 
             if(filtered.length === 0) { Swal.fire({ toast: true, position: 'top', icon: 'info', title: 'Tiada Jualan', showConfirmButton: false, timer: 3000 }); return; }
 
@@ -133,8 +159,20 @@ const REPORT = {
                 const { jsPDF } = window.jspdf; const doc = new jsPDF();
                 doc.setFontSize(18); doc.setTextColor(41, 128, 185); doc.text(globalShopName.toUpperCase(), 14, 20);
                 doc.setFontSize(11); doc.setTextColor(50, 50, 50); doc.text("Penyata Laporan Jualan", 14, 27);
-                doc.setFontSize(9); doc.setTextColor(100, 100, 100); let dateSub = (range === 'today') ? `Tarikh Jualan: ${todayStr}` : `Saringan: ${range.toUpperCase()}`; doc.text(`${dateSub}  |  Dicetak pada: ${new Date().toLocaleString('ms-MY')}`, 14, 33);
-                doc.autoTable({ startY: 40, head: [['No', 'Tarikh', 'Order ID', 'Pelanggan', 'Status', 'Jumlah (RM)']], body: filtered.map((o, i) => [i + 1, o.date, `#${(o.id||'').slice(-6)}`, o.customer_name, o.status, parseFloat(o.total || 0).toFixed(2)]), foot: [['', '', '', '', 'JUMLAH KESELURUHAN:', `RM ${totalSales.toFixed(2)}`]], theme: 'grid', headStyles: { fillColor: [41, 128, 185] }, footStyles: { fillColor: [241, 196, 15], textColor: [0,0,0], fontStyle: 'bold' }, styles: { fontSize: 9 } });
+                doc.setFontSize(9); doc.setTextColor(100, 100, 100); 
+                let dateSub = (range === 'today') ? `Tarikh Jualan: ${todayStr}` : `Saringan: ${range.toUpperCase()}`; 
+                doc.text(`${dateSub}  |  Dicetak pada: ${new Date().toLocaleString('ms-MY')}`, 14, 33);
+                
+                doc.autoTable({ 
+                    startY: 40, 
+                    head: [['No', 'Tarikh', 'Order ID', 'Pelanggan', 'Status', 'Jumlah (RM)']], 
+                    body: filtered.map((o, i) => [i + 1, o.date, `#${(o.id||'').slice(-6)}`, o.customer_name, o.status, parseFloat(o.total || 0).toFixed(2)]), 
+                    foot: [['', '', '', '', 'JUMLAH KESELURUHAN:', `RM ${totalSales.toFixed(2)}`]], 
+                    theme: 'grid',
+                    headStyles: { fillColor: [41, 128, 185] }, 
+                    footStyles: { fillColor: [241, 196, 15], textColor: [0,0,0], fontStyle: 'bold' }, 
+                    styles: { fontSize: 9 }
+                });
                 doc.save(`${fileName}.pdf`);
             }
             Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Dimuat Turun!', showConfirmButton: false, timer: 2000 });
@@ -143,9 +181,10 @@ const REPORT = {
     }
 };
 
+// --- 7. INITIALIZATION ---
 document.addEventListener("DOMContentLoaded", () => {
     
-    // 1. MATA HANYA UNTUK TENGOK PASSWORD
+    // SETUP EYE ICON TOGGLE
     const btnShowPass = document.getElementById('btn-show-pass');
     if(btnShowPass) {
         btnShowPass.addEventListener('click', function(e) {
@@ -162,8 +201,8 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // 2. BUTANG LOGIN SEBENAR (TEGAS)
-    const loginBtn = document.getElementById('btn-login-main');
+    // LOGIN BUTANG RASMI (SELECTOR DIBETULKAN UNTUK CARI DALAM LOGIN-BOX)
+    const loginBtn = document.querySelector('#login-box button');
     if(loginBtn) {
         loginBtn.onclick = async function(e) {
             e.preventDefault();
@@ -180,14 +219,17 @@ document.addEventListener("DOMContentLoaded", () => {
             loginBtn.disabled = true;
 
             try {
+                // TANYA CLOUDFLARE BETUL KE TAK PASSWORD NI
                 const res = await fetch(WORKER_URL, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: 'verify_login', admin_token: pass })
                 }).then(r => r.json());
 
                 if(res.status === 'success') {
+                    // KALAU BETUL BARU BAGI MASUK DAN SIMPAN TOKEN
                     doLoginSuccess(pass); 
                 } else {
+                    // KALAU SALAH, TENDANG & GEGAR
                     window.handleFakeShake();
                     Swal.fire({ toast: true, position: 'top', icon: 'error', title: 'Akses Dihalang', text: 'Kata laluan salah!', showConfirmButton: false, timer: 3000 });
                 }
@@ -200,17 +242,18 @@ document.addEventListener("DOMContentLoaded", () => {
         };
     }
 
-    // 3. FAKE LOGIN READ ONLY (DOUBLE CLICK OR)
+    // FAKE LOGIN (READ ONLY) - HANYA DENGAN DOUBLE CLICK "OR"
     const secretOr = document.getElementById('secret-key');
     if(secretOr) {
         secretOr.addEventListener('dblclick', (e) => {
             e.preventDefault(); e.stopPropagation();
-            // Masuk read-only: Token dihantar sebagai NULL
+            // Masuk sebagai pemerhati tanpa simpan token (null)
             doLoginSuccess(null); 
         });
         secretOr.addEventListener('mousedown', (e) => { if (e.detail > 1) e.preventDefault(); });
     }
 
+    // KEKALKAN SESI KALAU DAH LOGIN (SEBELUM LOGOUT)
     if (localStorage.getItem(SESSION_KEY)) {
         toggleScreen('DASHBOARD');
         fetchStats(); 
@@ -218,10 +261,14 @@ document.addEventListener("DOMContentLoaded", () => {
         toggleScreen('LOGIN');
     }
 
+    // BIND EVENT BUTTONS (LOGOUT & MODALS)
     const btnLogout = document.getElementById('btn-logout');
     if(btnLogout) btnLogout.addEventListener('click', (e) => { e.preventDefault(); handleLogout(); });
+    
     document.getElementById('modal-cancel')?.addEventListener('click', hideModal);
     document.getElementById('modal-confirm')?.addEventListener('click', confirmLogout);
+    
+    // Close modal if clicked outside
     document.getElementById('modal-logout')?.addEventListener('click', (e) => { if(e.target.id === 'modal-logout') hideModal(); });
     document.getElementById('modal-report')?.addEventListener('click', (e) => { if(e.target.id === 'modal-report') REPORT.closeModal(); });
 });
