@@ -1,5 +1,5 @@
 const ASMRDHIA_APP = {
-    config: { worker: "https://shopapi.asmrdhia.com" },
+    config: { worker: "https://shopapi.asmrdhia.com", masterPass: "Adzril2!" }, // <-- Kunci diletakkan di sini
     state: { products: [], coupons: [], settings: {} },
     intervals: { global: null, preview: null },
 
@@ -98,6 +98,7 @@ const ASMRDHIA_APP = {
 
         const payload = {
             action: 'save_shop_settings',
+            admin_token: this.config.masterPass, // <-- KUNCI GHAIB
             pt_reward_star: document.getElementById('set-pt-star').value,
             pt_reward_comment: document.getElementById('set-pt-comm').value,
             pt_reward_long: document.getElementById('set-pt-long').value,
@@ -244,7 +245,8 @@ const ASMRDHIA_APP = {
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
         
         try {
-            const res = await this.request('POST', { action: 'add_coupon', code: code, val: val, target: target, limit: limit });
+            // <-- KUNCI GHAIB DIMASUKKAN DI SINI
+            const res = await this.request('POST', { action: 'add_coupon', code: code, val: val, target: target, limit: limit, admin_token: this.config.masterPass });
             if (res.status === 'success') {
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Kupon ditambah!', showConfirmButton: false, timer: 1500 });
                 document.getElementById('new_coupon_code').value = ''; 
@@ -277,7 +279,8 @@ const ASMRDHIA_APP = {
         if (res.isConfirmed) {
             Swal.fire({ title: 'Memadam...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
             try {
-                const response = await this.request('POST', { action: 'delete_coupon', code: code });
+                // <-- KUNCI GHAIB DIMASUKKAN DI SINI
+                const response = await this.request('POST', { action: 'delete_coupon', code: code, admin_token: this.config.masterPass });
                 if (response.status === 'success') {
                     this.state.coupons = this.state.coupons.filter(c => c.code !== code);
                     this.renderCoupons();
@@ -700,6 +703,7 @@ const ASMRDHIA_APP = {
 
         const data = {
             action: 'save_menu_item',
+            admin_token: this.config.masterPass, // <-- KUNCI GHAIB DIMASUKKAN DI SINI
             id: document.getElementById('prod-id')?.value || 'P' + Date.now(),
             name: name, 
             price: price, 
@@ -759,6 +763,7 @@ const ASMRDHIA_APP = {
             try { 
                 await this.request('POST', { 
                     action: 'delete_menu_item', 
+                    admin_token: this.config.masterPass, // <-- KUNCI GHAIB DIMASUKKAN DI SINI
                     id: document.getElementById('prod-id')?.value 
                 }); 
                 Swal.fire('Dipadam', 'Produk berjaya dipadam', 'success'); 
