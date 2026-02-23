@@ -5,10 +5,22 @@ const ASMRDHIA_APP = {
 
     async request(method, bodyData = null, customAction = null) {
         const options = { method: method, headers: { 'Content-Type': 'application/json' } };
-        if (bodyData) options.body = JSON.stringify(bodyData);
+        
+        // --- TAMBAHAN KUNCI GHAIB UNTUK POST ---
+        if (bodyData) {
+            bodyData.admin_token = this.config.masterPass; // Paksa masuk token
+            options.body = JSON.stringify(bodyData);
+        }
+        
         let url = this.config.worker;
-        if (method === 'GET' && customAction) url += `?action=${customAction}&_t=${Date.now()}`;
-        else if (method === 'GET') url += `?action=get_menu_data&_t=${Date.now()}`;
+        
+        // --- TAMBAHAN KUNCI GHAIB UNTUK GET (URL PARAMETER) ---
+        if (method === 'GET' && customAction) {
+            url += `?action=${customAction}&admin_token=${this.config.masterPass}&_t=${Date.now()}`;
+        } else if (method === 'GET') {
+            url += `?action=get_menu_data&admin_token=${this.config.masterPass}&_t=${Date.now()}`;
+        }
+        
         const res = await fetch(url, options);
         return await res.json();
     },
