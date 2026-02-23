@@ -9,7 +9,7 @@ const ASMRDHIA_APP = {
         
         let url = this.config.worker;
         
-        // Tarik kunci dari memori browser untuk benarkan admin nampak semua produk
+        // Tarik kunci rahsia dari memori browser supaya admin boleh tengok produk DRAFT
         const secret = localStorage.getItem('super_secret_key') || '';
         
         if (method === 'GET' && customAction) {
@@ -53,7 +53,9 @@ const ASMRDHIA_APP = {
             const parsed = JSON.parse(imgData);
             if (Array.isArray(parsed)) return parsed;
             return [imgData];
-        } catch(e) { return [imgData]; }
+        } catch(e) {
+            return [imgData];
+        }
     },
 
     getYoutubeThumbnail(url) {
@@ -76,11 +78,6 @@ const ASMRDHIA_APP = {
                 this.request('GET', null, 'get_coupons'),
                 this.request('GET', null, 'get_shop_settings')
             ]);
-            
-            // Perangkap ralat kalau Cloudflare tendang kita
-            if (resProd.status === 'error') throw new Error(resProd.msg || 'Gagal memuatkan produk');
-            if (resCoup.status === 'error') throw new Error(resCoup.msg || 'Gagal memuatkan kupon');
-
             this.state.products = resProd.menus || [];
             this.state.coupons = resCoup.coupons || [];
             this.state.settings = resSet.data || {};
@@ -91,29 +88,18 @@ const ASMRDHIA_APP = {
             this.populatePointSettings();
             this.startGlobalCountdowns();
         } catch (e) {
-            console.error("Ralat Sistem:", e);
-            // Padam loading pusing-pusing tu, ganti dengan tulisan ralat merah
+            // Padamkan pusingan loading dan tunjuk ralat supaya tak tergantung
             const grid = document.getElementById('product-grid');
-            if(grid) {
-                grid.innerHTML = `<div class="col-span-full py-10 text-center bg-red-50 border border-red-200 rounded-2xl text-red-500 font-bold"><i class="ri-error-warning-fill text-4xl mb-2 block"></i>Ralat Sistem: ${e.message}</div>`;
-            }
-            const cList = document.getElementById('coupon-list');
-            if(cList) cList.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-red-500 font-bold">Ralat: ${e.message}</td></tr>`;
-            
-            Swal.fire('Ralat Sistem', e.message, 'error');
+            if (grid) grid.innerHTML = `<div class="col-span-full py-16 text-center text-red-500 font-bold bg-red-50 rounded-2xl border border-red-200"><i class="ri-error-warning-line text-4xl block mb-2"></i>Gagal memuatkan data pelayan. Sila refresh (F5).</div>`;
+            Swal.fire('Ralat Rangkaian', 'Gagal memuatkan data dari server', 'error');
         }
     },
 
     populatePointSettings() {
-        const sStar = document.getElementById('set-pt-star');
-        const sComm = document.getElementById('set-pt-comm');
-        const sLong = document.getElementById('set-pt-long');
-        const sRate = document.getElementById('set-pt-rate');
-        
-        if(sStar) sStar.value = this.state.settings.pt_reward_star || 1;
-        if(sComm) sComm.value = this.state.settings.pt_reward_comment || 5;
-        if(sLong) sLong.value = this.state.settings.pt_reward_long || 10;
-        if(sRate) sRate.value = this.state.settings.pt_redeem_value || 0.10;
+        document.getElementById('set-pt-star').value = this.state.settings.pt_reward_star || 1;
+        document.getElementById('set-pt-comm').value = this.state.settings.pt_reward_comment || 5;
+        document.getElementById('set-pt-long').value = this.state.settings.pt_reward_long || 10;
+        document.getElementById('set-pt-rate').value = this.state.settings.pt_redeem_value || 0.10;
     },
 
     async savePointSettings() {
@@ -135,8 +121,12 @@ const ASMRDHIA_APP = {
             if(res.status === 'success') {
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tetapan Points disimpan!', showConfirmButton: false, timer: 1500 });
             } else throw new Error(res.msg);
-        } catch(e) { Swal.fire('Ralat', e.message, 'error'); } 
-        finally { btn.innerHTML = og; btn.disabled = false; }
+        } catch(e) {
+            Swal.fire('Ralat', e.message, 'error');
+        } finally {
+            btn.innerHTML = og;
+            btn.disabled = false;
+        }
     },
 
     isProductLocked(liveDate) {
@@ -149,10 +139,13 @@ const ASMRDHIA_APP = {
         if (!element) return false;
         
         const diff = new Date(targetDate) - new Date();
+        
         if (diff <= 0) { 
             element.innerHTML = '<div class="text-xs font-bold text-emerald-400 bg-black/50 px-3 py-1.5 rounded-lg border border-emerald-500/30">TELAH DIBUKA!</div>'; 
             const overlay = element.closest('.lock-overlay-container');
-            if (overlay) overlay.style.display = 'none';
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
             return false; 
         }
         
@@ -201,10 +194,9 @@ const ASMRDHIA_APP = {
 
     renderCoupons() {
         const list = document.getElementById('coupon-list');
-        const countBadge = document.getElementById('coupon-count');
         if (!list) return;
         
-        if (countBadge) countBadge.innerText = this.state.coupons.length;
+        document.getElementById('coupon-count').innerText = this.state.coupons.length;
         list.innerHTML = '';
 
         if (this.state.coupons.length === 0) {
@@ -258,11 +250,13 @@ const ASMRDHIA_APP = {
         if (!code) return Swal.fire('Gagal', 'Sila masukkan Kod Kupon', 'warning');
         if (isNaN(val) || val <= 0) return Swal.fire('Gagal', 'Nilai potongan tidak sah', 'warning');
 
+        const limit = limitStr ? parseInt(limitStr) : 0;
+
         btn.disabled = true; 
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
         
         try {
-            const res = await this.request('POST', { action: 'add_coupon', code: code, val: val, target: target, limit: parseInt(limitStr) || 0 });
+            const res = await this.request('POST', { action: 'add_coupon', code: code, val: val, target: target, limit: limit });
             if (res.status === 'success') {
                 Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Kupon ditambah!', showConfirmButton: false, timer: 1500 });
                 document.getElementById('new_coupon_code').value = ''; 
@@ -274,12 +268,24 @@ const ASMRDHIA_APP = {
                 this.renderCoupons();
                 this.populateProductDropdown();
             } else throw new Error(res.msg);
-        } catch(e) { Swal.fire('Ralat', e.message, 'error'); } 
-        finally { btn.disabled = false; btn.innerHTML = '<i class="ri-add-line text-lg"></i> Tambah'; }
+        } catch(e) { 
+            Swal.fire('Ralat', e.message, 'error'); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerHTML = '<i class="ri-add-line text-lg"></i> Tambah'; 
+        }
     },
 
     async deleteCoupon(code) {
-        const res = await Swal.fire({ title: `Padam Kupon?`, text: code, icon: 'warning', showCancelButton: true, confirmButtonText: 'Ya', confirmButtonColor: '#ef4444' });
+        const res = await Swal.fire({ 
+            title: `Padam Kupon?`, 
+            text: code, 
+            icon: 'warning', 
+            showCancelButton: true, 
+            confirmButtonText: 'Ya', 
+            confirmButtonColor: '#ef4444' 
+        });
+        
         if (res.isConfirmed) {
             Swal.fire({ title: 'Memadam...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
             try {
@@ -290,21 +296,20 @@ const ASMRDHIA_APP = {
                     this.populateProductDropdown();
                     Swal.close();
                 } else throw new Error(response.msg);
-            } catch(e) { Swal.fire('Ralat', 'Gagal memadam kupon.', 'error'); }
+            } catch(e) { 
+                Swal.fire('Ralat', 'Gagal memadam kupon.', 'error'); 
+            }
         }
     },
 
     renderProductGrid(data = null) {
         const grid = document.getElementById('product-grid');
-        const countEl = document.getElementById('prod-count');
-        if (!grid) return;
-        
         grid.innerHTML = '';
         const list = data || this.state.products;
         
         if (list.length === 0) {
             grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-2xl border border-gray-100 shadow-sm"><i class="ri-plant-line text-4xl text-gray-300 block mb-2"></i><p class="text-gray-500 font-medium">Tiada produk dijumpai.</p></div>`;
-            if (countEl) countEl.innerText = 0;
+            document.getElementById('prod-count').innerText = 0;
             return;
         }
 
@@ -318,14 +323,13 @@ const ASMRDHIA_APP = {
             const discount = meta.discount;
             
             const mediaArr = this.parseMedia(p.image);
-            const rawImgUrl = mediaArr.length > 0 ? mediaArr[0] : '';
+            let rawImgUrl = mediaArr.length > 0 ? mediaArr[0] : '';
             const img = rawImgUrl ? (this.getYoutubeThumbnail(rawImgUrl) || rawImgUrl) : 'https://placehold.co/400?text=No+Img';
             
             const isScheduled = meta.isCountdown == 1 && meta.liveDate;
             const isLocked = isScheduled ? this.isProductLocked(meta.liveDate) : false;
 
             let badgesHTML = '';
-            // Semak status sebenar produk dari database untuk badge DRAFT
             if (p.status === 'DRAFT' || meta.isActive === 0) badgesHTML += `<span class="badge badge-outline"><i class="ri-eye-off-line"></i> DRAFT</span>`;
             if (actualStock <= 0 && p.status !== 'DRAFT') badgesHTML += `<span class="badge badge-red">HABIS STOK</span>`;
             if (discount > 0 && discount < price) badgesHTML += `<span class="badge badge-orange">-${Math.round(((price-discount)/price)*100)}%</span>`;
@@ -338,11 +342,12 @@ const ASMRDHIA_APP = {
 
             let lockHTML = '';
             if (isLocked) {
+                const cid = `grid-cd-${p.id}`;
                 lockHTML = `
                 <div class="lock-overlay-container absolute inset-0 bg-gray-900/70 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-white transition-opacity duration-500">
                     <i class="ri-lock-2-line text-3xl mb-1"></i>
                     <div class="text-[10px] uppercase tracking-widest font-bold mb-3">Terkunci</div>
-                    <div id="grid-cd-${p.id}" class="countdown-timer"></div>
+                    <div id="${cid}" class="countdown-timer"></div>
                 </div>`;
             }
 
@@ -373,7 +378,7 @@ const ASMRDHIA_APP = {
             `;
         });
 
-        if (countEl) countEl.innerText = list.length;
+        document.getElementById('prod-count').innerText = list.length;
         this.updateTableCountdowns(); 
     },
 
@@ -390,21 +395,29 @@ const ASMRDHIA_APP = {
         if(!edit) this.resetForm(); 
     },
     
-    closeModal() { document.getElementById('product-modal').classList.remove('active'); },
+    closeModal() { 
+        document.getElementById('product-modal').classList.remove('active'); 
+    },
 
     scrollGallery(direction) {
         const gallery = document.getElementById('prev-image-gallery');
-        if(gallery) gallery.scrollBy({ left: direction * gallery.clientWidth, behavior: 'smooth' });
+        if(gallery) {
+            const scrollAmount = gallery.clientWidth; 
+            gallery.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
+        }
     },
 
     playVideo(containerId, embedUrl) {
         const container = document.getElementById(containerId);
-        if(container) container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        if(container) {
+            container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
+        }
     },
 
     closePreviewModal() {
         document.getElementById('preview-modal').classList.remove('active');
         if (this.intervals.preview) clearInterval(this.intervals.preview);
+        
         const gallery = document.getElementById('prev-image-gallery');
         if (gallery) gallery.innerHTML = '';
     },
@@ -415,16 +428,28 @@ const ASMRDHIA_APP = {
             if(el) el.value = '';
         });
         
-        const elStock = document.getElementById('prod-stock'); if(elStock) elStock.value = 0;
-        const elStatus = document.getElementById('prod-status'); if(elStatus) elStatus.value = 1;
-        const elFreeShip = document.getElementById('prod-free-ship'); if(elFreeShip) elFreeShip.checked = false;
-        const elCount = document.getElementById('prod-is-countdown'); if(elCount) elCount.checked = false;
+        const prodStock = document.getElementById('prod-stock');
+        if(prodStock) prodStock.value = 0;
+        
+        const prodStatus = document.getElementById('prod-status');
+        if(prodStatus) prodStatus.value = 1;
+        
+        const prodFreeShip = document.getElementById('prod-free-ship');
+        if(prodFreeShip) prodFreeShip.checked = false;
+        
+        const prodIsCountdown = document.getElementById('prod-is-countdown');
+        if(prodIsCountdown) prodIsCountdown.checked = false;
         
         this.toggleCountdown(false);
         
-        const varList = document.getElementById('variation-list'); if(varList) varList.innerHTML = ''; 
-        const mediaList = document.getElementById('main-media-list'); 
-        if(mediaList) { mediaList.innerHTML = ''; this.addMainMedia(); }
+        const variationList = document.getElementById('variation-list');
+        if(variationList) variationList.innerHTML = ''; 
+        
+        const mainMediaList = document.getElementById('main-media-list');
+        if(mainMediaList) {
+            mainMediaList.innerHTML = '';
+            this.addMainMedia(); 
+        }
         
         this.updateFormPreview(); 
         this.calcTotalStock(); 
@@ -450,11 +475,15 @@ const ASMRDHIA_APP = {
         if (!grid) return;
         
         grid.innerHTML = '';
+        const inputs = document.querySelectorAll('.main-media-input');
+        
+        let hasValid = false;
         let count = 0;
         
-        document.querySelectorAll('.main-media-input').forEach((inp) => {
+        inputs.forEach((inp) => {
             const url = inp.value.trim();
             if(url.length > 5) {
+                hasValid = true;
                 const isYt = this.getYoutubeThumbnail(url);
                 const thumb = isYt || url;
                 const icon = isYt ? '<div class="absolute inset-0 bg-black/40 flex items-center justify-center"><i class="ri-play-circle-fill text-white text-2xl drop-shadow-md"></i></div>' : '';
@@ -463,41 +492,54 @@ const ASMRDHIA_APP = {
             }
         });
         
-        if(count === 0) {
+        if(!hasValid) {
             grid.innerHTML = `<div class="col-span-4 py-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-400 text-xs font-medium"><i class="ri-image-add-line text-3xl mb-2"></i> Pratonton Media</div>`;
         } else {
-            for(let i=count; i<4; i++) grid.innerHTML += `<div class="aspect-square bg-gray-100 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-300"><i class="ri-image-line text-2xl"></i></div>`;
+            for(let i=count; i<4; i++) {
+                grid.innerHTML += `<div class="aspect-square bg-gray-100 rounded-xl border border-dashed border-gray-200 flex items-center justify-center text-gray-300"><i class="ri-image-line text-2xl"></i></div>`;
+            }
         }
     },
 
     updateManualStock() { 
         const stockInput = document.getElementById('prod-stock');
         const displayInput = document.getElementById('prod-stock-display');
-        if(stockInput && displayInput) displayInput.value = stockInput.value; 
+        if(stockInput && displayInput) {
+            displayInput.value = stockInput.value; 
+        }
     },
 
     calcTotalStock() {
         let total = 0;
         const rows = document.querySelectorAll('#variation-list .var-row');
-        const singleContainer = document.getElementById('single-stock-container');
+        
+        const singleStockContainer = document.getElementById('single-stock-container');
         const noVarMsg = document.getElementById('no-var-msg');
         const stockBadge = document.getElementById('stock-auto-badge');
         const displayInput = document.getElementById('prod-stock-display');
         
         if(rows.length > 0) {
             rows.forEach(r => {
-                const sInp = r.querySelector('.var-stock');
-                if(sInp) total += (parseInt(sInp.value)||0);
+                const stockInput = r.querySelector('.var-stock');
+                if(stockInput) total += (parseInt(stockInput.value)||0);
             });
-            if(singleContainer) singleContainer.style.display = 'none';
+            
+            if(singleStockContainer) singleStockContainer.style.display = 'none';
             if(noVarMsg) noVarMsg.style.display = 'none';
-            if(stockBadge) { stockBadge.innerText = "AUTO"; stockBadge.className = "bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded font-bold"; }
+            if(stockBadge) {
+                stockBadge.innerText = "AUTO";
+                stockBadge.className = "bg-blue-100 text-blue-600 text-[10px] px-2 py-0.5 rounded font-bold";
+            }
         } else {
-            const sInp = document.getElementById('prod-stock');
-            if(sInp) total = parseInt(sInp.value)||0;
-            if(singleContainer) singleContainer.style.display = 'block';
+            const stockInput = document.getElementById('prod-stock');
+            if(stockInput) total = parseInt(stockInput.value)||0;
+            
+            if(singleStockContainer) singleStockContainer.style.display = 'block';
             if(noVarMsg) noVarMsg.style.display = 'block';
-            if(stockBadge) { stockBadge.innerText = "MANUAL"; stockBadge.className = "bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold"; }
+            if(stockBadge) {
+                stockBadge.innerText = "MANUAL";
+                stockBadge.className = "bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold";
+            }
         }
         
         if(displayInput) displayInput.value = total;
@@ -529,7 +571,9 @@ const ASMRDHIA_APP = {
                     <span class="text-[10px] font-bold text-gray-500 uppercase">Gambar Variasi (Max 8)</span>
                     <button type="button" onclick="ASMRDHIA_APP.addVarMediaInput(this)" class="text-[10px] text-blue-600 font-bold bg-blue-100 hover:bg-blue-200 px-2 py-1.5 rounded transition"><i class="ri-add-line"></i> Tambah</button>
                 </div>
-                <div class="var-media-container space-y-2">${mediaHtml}</div>
+                <div class="var-media-container space-y-2">
+                    ${mediaHtml}
+                </div>
             </div>`;
         container.appendChild(div); 
         this.calcTotalStock();
@@ -547,10 +591,11 @@ const ASMRDHIA_APP = {
     },
 
     toggleCountdown(show) { 
-        const box = document.getElementById('countdown-box');
-        const prev = document.getElementById('countdown-preview');
-        if(box) box.style.display = show ? 'block' : 'none'; 
-        if(prev) prev.style.display = show ? 'block' : 'none'; 
+        const countdownBox = document.getElementById('countdown-box');
+        const countdownPreview = document.getElementById('countdown-preview');
+        
+        if(countdownBox) countdownBox.style.display = show ? 'block' : 'none'; 
+        if(countdownPreview) countdownPreview.style.display = show ? 'block' : 'none'; 
     },
     
     validateScheduleDate() {
@@ -583,8 +628,11 @@ const ASMRDHIA_APP = {
         
         document.getElementById('main-media-list').innerHTML = '';
         const mediaArr = this.parseMedia(p.image);
-        if(mediaArr.length > 0) mediaArr.forEach(url => this.addMainMedia(url));
-        else this.addMainMedia();
+        if(mediaArr.length > 0) {
+            mediaArr.forEach(url => this.addMainMedia(url));
+        } else {
+            this.addMainMedia();
+        }
         
         document.getElementById('variation-list').innerHTML = '';
         const vars = this.safeJSONParse(p.variations);
@@ -622,7 +670,9 @@ const ASMRDHIA_APP = {
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> Menyimpan...';
 
         let mainMedia = [];
-        document.querySelectorAll('.main-media-input').forEach(inp => { if(inp.value.trim()) mainMedia.push(inp.value.trim()); });
+        document.querySelectorAll('.main-media-input').forEach(inp => {
+            if(inp.value.trim()) mainMedia.push(inp.value.trim());
+        });
         const finalImgData = mainMedia.length > 0 ? JSON.stringify(mainMedia) : '';
 
         let variations = [];
@@ -633,10 +683,18 @@ const ASMRDHIA_APP = {
             const vWeight = parseFloat(row.querySelector('.var-weight')?.value) || 0;
             
             let varMedia = [];
-            row.querySelectorAll('.var-media-input').forEach(inp => { if(inp.value.trim()) varMedia.push(inp.value.trim()); });
+            row.querySelectorAll('.var-media-input').forEach(inp => {
+                if(inp.value.trim()) varMedia.push(inp.value.trim());
+            });
             const vImgData = varMedia.length > 0 ? JSON.stringify(varMedia) : '';
 
-            if(vName) variations.push({ label: vName, price: vPrice, stock: vStock, weight: vWeight, image: vImgData });
+            if(vName) variations.push({ 
+                label: vName, 
+                price: vPrice, 
+                stock: vStock, 
+                weight: vWeight, 
+                image: vImgData 
+            });
         });
 
         const finalStock = variations.length > 0 ? variations.reduce((a,b)=>a+b.stock,0) : (parseInt(document.getElementById('prod-stock')?.value)||0);
@@ -647,17 +705,24 @@ const ASMRDHIA_APP = {
         const { cleanDesc } = this.parseData(document.getElementById('prod-desc')?.value);
 
         const configObj = { 
-            d: finalDiscount, s: finalStock, a: parseInt(finalStatus), c: isC, t: (isC && lDate) ? lDate : '' 
+            d: finalDiscount, 
+            s: finalStock, 
+            a: parseInt(finalStatus), 
+            c: isC, 
+            t: (isC && lDate) ? lDate : '' 
         };
+        
         const desc = `[CONFIG:${JSON.stringify(configObj)}][/CONFIG] ${cleanDesc || ''}`;
 
         const data = {
             action: 'save_menu_item',
             id: document.getElementById('prod-id')?.value || 'P' + Date.now(),
-            name: name, price: price, 
+            name: name, 
+            price: price, 
             weight_kg: document.getElementById('prod-weight')?.value || 0.5,
             cat: document.getElementById('prod-cat')?.value, 
-            img: finalImgData, description: desc, 
+            img: finalImgData,
+            description: desc, 
             variations: JSON.stringify(variations), 
             discount_price: finalDiscount,
             is_countdown: configObj.c, 
@@ -669,33 +734,66 @@ const ASMRDHIA_APP = {
         try {
             const res = await this.request('POST', data);
             if (res.status === 'success') {
-                Swal.fire({ icon: 'success', title: 'Berjaya', text: 'Produk disimpan', timer: 1000, showConfirmButton: false });
+                Swal.fire({ 
+                    icon: 'success', 
+                    title: 'Berjaya', 
+                    text: 'Produk disimpan', 
+                    timer: 1000, 
+                    showConfirmButton: false 
+                });
                 this.closeModal(); 
-                const [resProd, resCoup] = await Promise.all([ this.request('GET'), this.request('GET', null, 'get_coupons') ]);
+                
+                const [resProd, resCoup] = await Promise.all([
+                    this.request('GET'),
+                    this.request('GET', null, 'get_coupons')
+                ]);
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
+                
                 this.renderProductGrid();
                 this.renderCoupons();
                 this.populateProductDropdown();
             } else throw new Error(res.msg);
-        } catch (e) { Swal.fire('Gagal', e.message, 'error'); } 
-        finally { btn.disabled = false; btn.innerHTML = ogText; }
+        } catch (e) { 
+            Swal.fire('Gagal', e.message, 'error'); 
+        } finally { 
+            btn.disabled = false; 
+            btn.innerHTML = ogText; 
+        }
     },
 
     async deleteProduct() {
-        const res = await Swal.fire({ title: 'Padam Produk?', text: 'Tindakan ini tidak boleh dikembalikan', icon: 'warning', showCancelButton: true, confirmButtonColor: '#ef4444', confirmButtonText: 'Ya, Padam' });
+        const res = await Swal.fire({ 
+            title: 'Padam Produk?', 
+            text: 'Tindakan ini tidak boleh dikembalikan',
+            icon: 'warning', 
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Ya, Padam'
+        });
+        
         if(res.isConfirmed) {
             try { 
-                await this.request('POST', { action: 'delete_menu_item', id: document.getElementById('prod-id')?.value }); 
+                await this.request('POST', { 
+                    action: 'delete_menu_item', 
+                    id: document.getElementById('prod-id')?.value 
+                }); 
                 Swal.fire('Dipadam', 'Produk berjaya dipadam', 'success'); 
                 this.closeModal(); 
-                const [resProd, resCoup] = await Promise.all([ this.request('GET'), this.request('GET', null, 'get_coupons') ]);
+                
+                const [resProd, resCoup] = await Promise.all([
+                    this.request('GET'),
+                    this.request('GET', null, 'get_coupons')
+                ]);
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
+                
                 this.renderProductGrid();
                 this.renderCoupons();
                 this.populateProductDropdown();
-            } catch(e) { Swal.fire('Ralat', e.message, 'error'); }
+            } catch(e) { 
+                Swal.fire('Ralat', e.message, 'error'); 
+            }
         }
     },
 
@@ -706,18 +804,27 @@ const ASMRDHIA_APP = {
             const p = this.state.products.find(x => x.id == id);
             if (!p) return;
             const meta = this.parseData(p.description);
-            name = p.name; price = parseFloat(p.price); discount = meta.discount;
-            cat = p.category; desc = meta.cleanDesc; variations = this.safeJSONParse(p.variations);
+            name = p.name; 
+            price = parseFloat(p.price); 
+            discount = meta.discount;
+            cat = p.category; 
+            desc = meta.cleanDesc; 
+            variations = this.safeJSONParse(p.variations);
             stock = variations.length > 0 ? variations.reduce((a, v) => a + (parseInt(v.stock)||0), 0) : meta.stock;
-            isActive = (p.status === 'DRAFT') ? 0 : meta.isActive; 
-            isCountdown = meta.isCountdown; liveDate = meta.liveDate; 
-            isFreeShip = p.is_free_shipping; mediaArr = this.parseMedia(p.image);
+            isActive = (p.status === 'DRAFT') ? 0 : meta.isActive;
+            isCountdown = meta.isCountdown; 
+            liveDate = meta.liveDate; 
+            isFreeShip = p.is_free_shipping; 
+            mediaArr = this.parseMedia(p.image);
         } else {
             name = document.getElementById('prod-name')?.value; 
-            document.querySelectorAll('.main-media-input').forEach(i => { if(i.value.trim()) mediaArr.push(i.value.trim()); });
+            document.querySelectorAll('.main-media-input').forEach(i => { 
+                if(i.value.trim()) mediaArr.push(i.value.trim()); 
+            });
             price = parseFloat(document.getElementById('prod-price')?.value) || 0; 
             discount = parseFloat(document.getElementById('prod-discount')?.value) || 0;
-            cat = document.getElementById('prod-cat')?.value; desc = document.getElementById('prod-desc')?.value;
+            cat = document.getElementById('prod-cat')?.value; 
+            desc = document.getElementById('prod-desc')?.value;
             stock = parseInt(document.getElementById('prod-stock-display')?.value) || 0;
             isActive = parseInt(document.getElementById('prod-status')?.value) || 1;
             isCountdown = document.getElementById('prod-is-countdown')?.checked ? 1 : 0; 
@@ -759,7 +866,14 @@ const ASMRDHIA_APP = {
                     }
                 });
             }
-            if(scrollNav) scrollNav.style.display = (mArr.length > 1) ? 'block' : 'none';
+            
+            if(scrollNav) {
+                if(mArr.length > 1) {
+                    scrollNav.style.display = 'block';
+                } else {
+                    scrollNav.style.display = 'none';
+                }
+            }
         };
 
         renderGallery(mediaArr);
@@ -768,7 +882,10 @@ const ASMRDHIA_APP = {
         const promoBadge = document.getElementById('prev-promo-badge');
         if (discount > 0 && discount < price && priceCont) {
             priceCont.innerHTML = `<span class="text-gray-400 line-through text-sm">RM${price.toFixed(2)}</span> <span class="text-2xl font-bold text-emerald-600">RM${discount.toFixed(2)}</span>`;
-            if(promoBadge) { promoBadge.innerText = `-${Math.round(((price - discount) / price) * 100)}%`; promoBadge.style.display = 'inline-flex'; }
+            if(promoBadge) {
+                promoBadge.innerText = `-${Math.round(((price - discount) / price) * 100)}%`; 
+                promoBadge.style.display = 'inline-flex';
+            }
         } else {
             if(priceCont) priceCont.innerHTML = `<span class="text-2xl font-bold text-gray-900">RM${price.toFixed(2)}</span>`; 
             if(promoBadge) promoBadge.style.display = 'none';
@@ -776,13 +893,26 @@ const ASMRDHIA_APP = {
 
         const stockBadge = document.getElementById('prev-stock-badge');
         if(stockBadge) {
-            if (isActive === 0) { stockBadge.innerText = "DRAFT"; stockBadge.className = "absolute top-4 left-4 badge badge-outline z-20 flex items-center"; stockBadge.style.display = 'inline-flex'; } 
-            else if (stock <= 0) { stockBadge.innerText = "HABIS STOK"; stockBadge.className = "absolute top-4 left-4 badge badge-red z-20 flex items-center"; stockBadge.style.display = 'inline-flex'; } 
-            else { stockBadge.style.display = 'none'; }
+            if (isActive === 0) { 
+                stockBadge.innerText = "DRAFT"; 
+                stockBadge.className = "absolute top-4 left-4 badge badge-outline z-20 flex items-center"; 
+                stockBadge.style.display = 'inline-flex'; 
+            } 
+            else if (stock <= 0) { 
+                stockBadge.innerText = "HABIS STOK"; 
+                stockBadge.className = "absolute top-4 left-4 badge badge-red z-20 flex items-center"; 
+                stockBadge.style.display = 'inline-flex'; 
+            } 
+            else { 
+                stockBadge.style.display = 'none'; 
+            }
         }
 
         const freeShipBadge = document.getElementById('prev-freeship-badge');
-        if(freeShipBadge) freeShipBadge.style.display = (isFreeShip === 1) ? 'inline-flex' : 'none';
+        if(freeShipBadge) {
+            if (isFreeShip === 1) freeShipBadge.style.display = 'inline-flex'; 
+            else freeShipBadge.style.display = 'none';
+        }
 
         const varCont = document.getElementById('prev-var-container');
         const varList = document.getElementById('prev-var-list');
@@ -794,34 +924,51 @@ const ASMRDHIA_APP = {
                 const btn = document.createElement('button');
                 btn.className = 'px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold text-gray-600 hover:border-emerald-500 hover:text-emerald-600 transition shadow-sm';
                 btn.innerText = `${v.label} (${v.stock})`;
+                
                 btn.onclick = () => {
                     Array.from(varList.children).forEach(b=>b.classList.remove('bg-emerald-50', 'border-emerald-500', 'text-emerald-600'));
                     btn.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-600');
+                    
                     const vMediaArr = this.parseMedia(v.image);
-                    if(vMediaArr.length > 0 && vMediaArr[0] !== '') renderGallery(vMediaArr);
+                    if(vMediaArr.length > 0 && vMediaArr[0] !== '') {
+                        renderGallery(vMediaArr);
+                    }
+
                     if(v.price && priceCont) {
                         priceCont.innerHTML = `<span class="text-2xl font-bold text-emerald-600">RM${parseFloat(v.price).toFixed(2)}</span>`;
                         if(promoBadge) promoBadge.style.display = 'none';
                     }
+                    
                     if(stockBadge && isActive !== 0) {
-                        if (v.stock <= 0) { stockBadge.innerText = "HABIS STOK"; stockBadge.className = "absolute top-4 left-4 badge badge-red z-20 flex items-center"; stockBadge.style.display = 'inline-flex'; } 
-                        else { stockBadge.style.display = 'none'; }
+                        if (v.stock <= 0) {
+                            stockBadge.innerText = "HABIS STOK";
+                            stockBadge.className = "absolute top-4 left-4 badge badge-red z-20 flex items-center";
+                            stockBadge.style.display = 'inline-flex';
+                        } else {
+                            stockBadge.style.display = 'none';
+                        }
                     }
                 };
                 varList.appendChild(btn);
             });
-        } else if(varCont) { varCont.classList.add('hidden'); }
+        } else if(varCont) {
+            varCont.classList.add('hidden');
+        }
 
         const isScheduled = isCountdown == 1 && liveDate;
         const isLocked = isScheduled ? this.isProductLocked(liveDate) : false;
         
         const lockOverlay = document.getElementById('prev-lock-overlay');
-        if(lockOverlay) lockOverlay.style.display = isLocked ? 'flex' : 'none';
+        if(lockOverlay) {
+            lockOverlay.style.display = isLocked ? 'flex' : 'none';
+        }
         
         if (isLocked) {
             this.updateCountdownDisplay('prev-countdown', liveDate);
             if (this.intervals.preview) clearInterval(this.intervals.preview);
-            this.intervals.preview = setInterval(() => { this.updateCountdownDisplay('prev-countdown', liveDate); }, 1000);
+            this.intervals.preview = setInterval(() => {
+                 this.updateCountdownDisplay('prev-countdown', liveDate);
+            }, 1000);
         } else {
              if (this.intervals.preview) clearInterval(this.intervals.preview);
         }
