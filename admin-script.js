@@ -209,7 +209,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // LOGIN BUTANG RASMI (KETAT)
+    // LOGIN BUTANG RASMI (SELECTOR DIBETULKAN)
     const loginBtn = document.querySelector('#login-box button');
     if(loginBtn) {
         loginBtn.onclick = async function(e) {
@@ -234,7 +234,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 }).then(r => r.json());
 
                 if(res.status === 'success') {
-                    // KALAU BETUL BARU BAGI MASUK
+                    // KALAU BETUL BARU BAGI MASUK DAN SIMPAN TOKEN
                     doLoginSuccess(pass); 
                 } else {
                     // KALAU SALAH, TENDANG & GEGAR
