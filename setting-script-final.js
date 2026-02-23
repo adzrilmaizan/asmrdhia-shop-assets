@@ -134,12 +134,10 @@ const SETTING = {
         btn.disabled = true;
         Swal.fire({ title: 'Menyimpan...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        // AMBIL PASSWORD SECARA AUTOMATIK DARI MEMORI
-        const activeToken = localStorage.getItem('admin_secret_token') || 'Adzril2!';
-
+        // HARDCODE PENUH - Abaikan memori browser sepenuhnya!
         const payload = {
             action: 'save_shop_settings',
-            admin_token: activeToken
+            admin_token: 'Adzril2!'
         };
         
         const keys = ['shop_name', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id', 'pt_reward_star', 'pt_reward_comment', 'pt_reward_long', 'pt_redeem_value'];
@@ -233,7 +231,7 @@ const SETTING = {
         const payload = { 
             action: 'add_coupon', 
             code, val, target, limit,
-            admin_token: localStorage.getItem('admin_secret_token') || 'Adzril2!'
+            admin_token: 'Adzril2!' // HARDCODE
         };
 
         const btn = document.getElementById('btn-add-cpn');
@@ -265,7 +263,7 @@ const SETTING = {
                     body: JSON.stringify({ 
                         action: 'delete_coupon', 
                         code: code, 
-                        admin_token: localStorage.getItem('admin_secret_token') || 'Adzril2!' 
+                        admin_token: 'Adzril2!' // HARDCODE
                     }) 
                 }).then(r=>r.json());
                 
