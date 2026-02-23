@@ -8,7 +8,6 @@ const SETTING = {
         await this.loadCoupons();
     },
 
-    // 5. EVENT LISTENERS (Update Sidebar Real-time)
     bindEvents: function() {
         ['shop_name', 'shop_phone', 'shop_url', 'toyyib_key', 'toyyib_cat', 'telegram_bot_token', 'telegram_chat_id'].forEach(id => {
             document.getElementById(id)?.addEventListener('input', () => SETTING.updateSidebar());
@@ -27,7 +26,6 @@ const SETTING = {
                     if (el && data[f] !== undefined) el.value = data[f];
                 });
 
-                // 7. DEFAULT VALUES
                 const elToyyibActive = document.getElementById('toyyib_active');
                 if (elToyyibActive) elToyyibActive.value = data.toyyib_active !== undefined ? data.toyyib_active : "1";
                 
@@ -36,7 +34,6 @@ const SETTING = {
 
                 this.updateSidebar();
 
-                // 1. LOADING INDICATOR
                 const loader = document.getElementById('loading-indicator');
                 const content = document.getElementById('settings-content');
                 if (loader) loader.classList.add('hidden');
@@ -45,7 +42,6 @@ const SETTING = {
         } catch(e) { console.error("Gagal load tetapan", e); }
     },
 
-    // 6. DETAILED SIDEBAR STATUS
     updateSidebar: function() {
         const name = document.getElementById('shop_name')?.value.trim() || '';
         const phone = document.getElementById('shop_phone')?.value.trim() || '';
@@ -61,7 +57,6 @@ const SETTING = {
             display.innerHTML = `<span class="font-black text-slate-800 tracking-tight text-xl">${name || 'Nama Kedai'}</span><div class="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest"><i class="ri-link text-emerald-500 mr-1"></i>${(url || 'url_kedai.com').replace('https://','').replace('http://','')}</div>`;
         }
 
-        // Profile Status
         const isProfileComplete = name && phone && url;
         const elProf = document.getElementById('status-profile');
         if(elProf) {
@@ -69,7 +64,6 @@ const SETTING = {
             elProf.className = isProfileComplete ? "text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded shadow-sm uppercase" : "text-[10px] font-bold text-amber-600 bg-amber-50 border border-amber-100 px-2 py-1 rounded shadow-sm uppercase";
         }
 
-        // Payment Status
         const isToyyib = tKey && tCat && tActive === '1';
         const elPay = document.getElementById('status-payment');
         if(elPay) {
@@ -77,7 +71,6 @@ const SETTING = {
             elPay.className = isToyyib ? "text-[10px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-100 px-2 py-1 rounded shadow-sm uppercase" : "text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-1 rounded shadow-sm uppercase";
         }
 
-        // Telegram Status
         const isTg = tgToken && tgChat;
         const elTg = document.getElementById('status-telegram');
         if(elTg) {
@@ -86,7 +79,6 @@ const SETTING = {
         }
     },
 
-    // 2. FORM VALIDATION
     validateForm: function() {
         const name = document.getElementById('shop_name')?.value.trim();
         const url = document.getElementById('shop_url')?.value.trim();
@@ -117,7 +109,6 @@ const SETTING = {
         return true;
     },
 
-    // 8. CONFIRM SAVE
     confirmSave: async function() {
         if(!this.validateForm()) return;
 
@@ -143,15 +134,16 @@ const SETTING = {
         btn.disabled = true;
         Swal.fire({ title: 'Menyimpan...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        // PEMBETULAN STRUKTUR PAYLOAD
+        // AMBIL PASSWORD SECARA AUTOMATIK DARI MEMORI
+        const activeToken = localStorage.getItem('admin_secret_token') || 'Adzril2!';
+
         const payload = {
             action: 'save_shop_settings',
-            admin_token: 'Adzril2!' // <--- HARDCODED PASSWORD DI SINI
+            admin_token: activeToken
         };
         
         const keys = ['shop_name', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id', 'pt_reward_star', 'pt_reward_comment', 'pt_reward_long', 'pt_redeem_value'];
         
-        // Loop ini akan memasukkan data dari form ke dalam payload secara automatik
         keys.forEach(k => { 
             const el = document.getElementById(k);
             if (el) {
@@ -169,7 +161,6 @@ const SETTING = {
         finally { btn.innerHTML = ogText; btn.disabled = false; }
     },
 
-    // 3. PREVIEW SHOP
     previewShop: function() {
         let url = document.getElementById('shop_url')?.value.trim();
         if(!url) {
@@ -182,7 +173,6 @@ const SETTING = {
         window.open(url, '_blank');
     },
 
-    // 4. TOGGLE PASSWORD
     togglePassword: function(inputId, iconId) {
         const input = document.getElementById(inputId);
         const icon = document.getElementById(iconId);
@@ -199,29 +189,6 @@ const SETTING = {
         }
     },
 
-    testTelegram: async function() {
-        const token = document.getElementById('telegram_bot_token').value;
-        const chat = document.getElementById('telegram_chat_id').value;
-        if(!token || !chat) { Swal.fire('Tidak Lengkap', 'Isi Token & Chat ID dahulu', 'warning'); return; }
-        
-        const btn = document.getElementById('btn-test-tg');
-        const ogHTML = btn.innerHTML;
-        btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> Uji...';
-        btn.disabled = true;
-        
-        try {
-            const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-                method: 'POST', headers: {'Content-Type':'application/json'},
-                body: JSON.stringify({ chat_id: chat, text: "🟢 UJIAN SISTEM: Integrasi Telegram berjaya dipasang dengan DhiaCloud!" })
-            });
-            const data = await res.json();
-            if(data.ok) Swal.fire('Berjaya!', 'Sila semak Telegram anda.', 'success');
-            else throw new Error(data.description);
-        } catch(e) { Swal.fire('Gagal', e.message, 'error'); }
-        finally { btn.innerHTML = ogHTML; btn.disabled = false; }
-    },
-
-    // --- COUPON MODULE ---
     loadCoupons: async function() {
         try {
             const res = await fetch(this.workerURL + "?action=get_coupons&_t=" + Date.now()).then(r => r.json());
@@ -244,9 +211,7 @@ const SETTING = {
         list.innerHTML = this.couponList.map(c => `
             <div class="flex items-center justify-between p-4 bg-white border border-slate-200 rounded-xl shadow-sm group hover:border-emerald-200 transition">
                 <div class="flex items-center gap-4">
-                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-black text-lg border border-emerald-100">
-                        %
-                    </div>
+                    <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center font-black text-lg border border-emerald-100">%</div>
                     <div>
                         <div class="font-black text-slate-800 text-lg uppercase tracking-wide">${c.code}</div>
                         <div class="text-xs text-slate-500 font-medium">Potongan RM${parseFloat(c.val).toFixed(2)} • Limit: ${parseInt(c.max_limit)===0 ? 'Tiada Had' : c.max_limit} • Guna: <span class="text-emerald-600 font-bold">${c.used_count || 0}</span></div>
@@ -268,7 +233,7 @@ const SETTING = {
         const payload = { 
             action: 'add_coupon', 
             code, val, target, limit,
-            admin_token: "Adzril2!" // <--- HARDCODED PASSWORD UNTUK KUPON JUGA
+            admin_token: localStorage.getItem('admin_secret_token') || 'Adzril2!'
         };
 
         const btn = document.getElementById('btn-add-cpn');
@@ -300,7 +265,7 @@ const SETTING = {
                     body: JSON.stringify({ 
                         action: 'delete_coupon', 
                         code: code, 
-                        admin_token: "Adzril2!" // <--- HARDCODED PASSWORD UNTUK DELETE KUPON
+                        admin_token: localStorage.getItem('admin_secret_token') || 'Adzril2!' 
                     }) 
                 }).then(r=>r.json());
                 
@@ -309,21 +274,6 @@ const SETTING = {
                     Swal.close();
                 } else throw new Error(res.msg);
             } catch(e) { Swal.fire('Ralat', e.message, 'error'); }
-        }
-    },
-
-    switchTab: function(tabId) {
-        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
-        document.querySelectorAll('.tab-btn').forEach(el => {
-            el.classList.remove('bg-blue-50', 'text-blue-600', 'border-blue-200');
-            el.classList.add('bg-white', 'text-slate-600', 'border-slate-200');
-        });
-
-        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
-        const activeBtn = document.getElementById(`btn-tab-${tabId}`);
-        if(activeBtn) {
-            activeBtn.classList.remove('bg-white', 'text-slate-600', 'border-slate-200');
-            activeBtn.classList.add('bg-blue-50', 'text-blue-600', 'border-blue-200');
         }
     }
 };
