@@ -143,14 +143,21 @@ const SETTING = {
         btn.disabled = true;
         Swal.fire({ title: 'Menyimpan...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
 
-        const payload = { 
-            action: 'save_shop_settings', 
-            admin_token: localStorage.getItem("admin_secret_token") || "" 
+        // PEMBETULAN STRUKTUR PAYLOAD
+        const payload = {
+            action: 'save_shop_settings',
+            admin_token: 'Adzril2!' // <--- HARDCODED PASSWORD DI SINI
         };
         
         const keys = ['shop_name', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id', 'pt_reward_star', 'pt_reward_comment', 'pt_reward_long', 'pt_redeem_value'];
         
-        keys.forEach(k => { if (document.getElementById(k)) payload[k] = document.getElementById(k).value; });
+        // Loop ini akan memasukkan data dari form ke dalam payload secara automatik
+        keys.forEach(k => { 
+            const el = document.getElementById(k);
+            if (el) {
+                payload[k] = el.value;
+            } 
+        });
 
         try {
             const res = await fetch(this.workerURL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }).then(r=>r.json());
@@ -261,7 +268,7 @@ const SETTING = {
         const payload = { 
             action: 'add_coupon', 
             code, val, target, limit,
-            admin_token: localStorage.getItem("admin_secret_token") || ""
+            admin_token: "Adzril2!" // <--- HARDCODED PASSWORD UNTUK KUPON JUGA
         };
 
         const btn = document.getElementById('btn-add-cpn');
@@ -287,7 +294,16 @@ const SETTING = {
         if(isConfirmed) {
             Swal.fire({ title: 'Memadam...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
             try {
-                const res = await fetch(this.workerURL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ action: 'delete_coupon', code: code, admin_token: localStorage.getItem("admin_secret_token") || "" }) }).then(r=>r.json());
+                const res = await fetch(this.workerURL, { 
+                    method: 'POST', 
+                    headers: {'Content-Type':'application/json'}, 
+                    body: JSON.stringify({ 
+                        action: 'delete_coupon', 
+                        code: code, 
+                        admin_token: "Adzril2!" // <--- HARDCODED PASSWORD UNTUK DELETE KUPON
+                    }) 
+                }).then(r=>r.json());
+                
                 if(res.status === 'success') {
                     await this.loadCoupons();
                     Swal.close();
