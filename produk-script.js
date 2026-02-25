@@ -51,16 +51,15 @@ const ASMRDHIA_APP = {
 
     getYoutubeThumbnail(url) {
         if (!url) return null;
-        // Tambahan "shorts\/" ke dalam regex
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? `https://img.youtube.com/vi/${match[2]}/hqdefault.jpg` : null;
+        return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
     },
 
     getEmbedUrl(url) {
-        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/)([^#&?]*).*/;
+        const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
         const match = url.match(regExp);
-        return (match && match[2].length === 11) ? `https://www.youtube.com/embed/${match[2]}?autoplay=1` : null;
+        return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
     },
 
     async init() {
