@@ -426,7 +426,13 @@ const APP = {
             `;
         } else {
             if(order.tracking_number) {
-                 footerHtml = `<button onclick="APP.sendEmailAndComplete('${order.id}')" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-sm hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 uppercase tracking-wide"><i class="ri-mail-send-fill text-lg"></i> Email Resit & Selesai</button>`;
+                 footerHtml = `
+                    <div class="flex gap-2 w-full mb-3">
+                        <button onclick="addTrackingTimeline('${order.id}')" class="flex-1 bg-blue-600 text-white py-3.5 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-sm flex items-center justify-center gap-2"><i class="ri-map-pin-time-line text-lg"></i> Update Tracking</button>
+                        <button onclick="copyTrackingLink('${order.id}')" class="flex-1 border border-slate-200 bg-white text-slate-700 py-3.5 rounded-xl font-bold text-sm hover:bg-slate-50 transition shadow-sm flex items-center justify-center gap-2"><i class="ri-links-line text-lg"></i> Copy Link</button>
+                    </div>
+                    <button onclick="APP.sendEmailAndComplete('${order.id}')" class="w-full bg-emerald-600 text-white py-4 rounded-xl font-bold text-sm hover:bg-emerald-700 transition shadow-lg shadow-emerald-200 flex items-center justify-center gap-2 uppercase tracking-wide"><i class="ri-mail-send-fill text-lg"></i> Email Resit & Selesai</button>
+                 `;
             } else {
                  footerHtml = `<button onclick="APP.inputTracking('${order.id}')" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold text-sm hover:bg-blue-700 transition shadow-lg shadow-blue-200 flex items-center justify-center gap-2 uppercase tracking-wide"><i class="ri-truck-fill text-lg"></i> Masukkan Tracking</button>`;
             }
