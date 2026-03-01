@@ -200,3 +200,124 @@ body {
 .ra-green-bg { background: #ecfdf5; border-color: #a7f3d0; }
 .ra-amber-bg { background: #fffbeb; border-color: #fde68a; }
 .ra-rose-bg  { background: #fef2f2; border-color: #fecaca; }
+
+/* =========================
+   SweetAlert2 Polish (Add Activity / Tracking Status)
+   ========================= */
+.swal-clean-popup{
+  border-radius: 18px !important;
+  padding: 18px 18px 14px !important;
+  overflow-x: hidden !important;   /* buang scrollbar bawah */
+}
+
+.swal-clean-title{
+  font-size: 18px !important;
+  font-weight: 900 !important;
+  color: #0f172a !important;
+  margin: 6px 0 10px !important;
+}
+
+.swal-clean-html{
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.swal-form{ text-align:left; }
+.swal-field{ margin: 12px 0; }
+
+.swal-field label{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 8px;
+}
+
+.swal-field .req{ color:#ef4444; font-weight:900; }
+.swal-field .muted{ color:#94a3b8; font-weight:800; letter-spacing:0; text-transform:none; font-size:11px; }
+
+.swal-input{
+  width:100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2px solid #e2e8f0;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  color:#0f172a;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+  box-sizing: border-box;
+}
+
+.swal-input:focus{
+  border-color:#3b82f6;
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+.swal-hint{
+  margin-top: 8px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  font-size: 11px;
+  font-weight: 700;
+  color:#94a3b8;
+}
+
+.swal-preview{
+  margin-top: 10px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 10px;
+  background:#f8fafc;
+}
+
+.swal-preview-label{
+  font-size: 10px;
+  font-weight: 900;
+  color:#64748b;
+  letter-spacing:.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.swal-preview img{
+  width:100%;
+  border-radius: 12px;
+  display:block;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.swal-clean-actions{
+  gap:10px !important;
+  margin-top: 10px !important;
+  padding-top: 12px !important;
+  border-top: 1px solid #e2e8f0;
+}
+
+.swal-clean-confirm{
+  border: none !important;
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-weight: 900 !important;
+  background: #10b981 !important;
+  color: #fff !important;
+}
+
+.swal-clean-cancel{
+  border-radius: 12px !important;
+  padding: 10px 16px !important;
+  font-weight: 900 !important;
+  background: #fff !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+/* helper */
+.hidden { display: none !important; }
