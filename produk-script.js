@@ -960,4 +960,4 @@ const ASMRDHIA_APP = {
     }
 };
 
-window.onload = () => ASMRDHIA_APP.init();
+window.addEventListener('load', () => ASMRDHIA_APP.init());
