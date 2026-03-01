@@ -578,4 +578,4 @@ const APP = {
     }
 };
 
-window.onload = () => APP.startLoad();
+window.addEventListener('load', () => APP.startLoad());
