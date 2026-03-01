@@ -119,7 +119,7 @@ const SETTING = {
     }
 };
 
-window.onload = () => SETTING.init();
+window.addEventListener('load', () => SETTING.init());
 
 ['shop_name', 'shop_phone', 'shop_url', 'toyyib_key', 'toyyib_cat', 'telegram_bot_token', 'telegram_chat_id'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => SETTING.updateSidebar());
