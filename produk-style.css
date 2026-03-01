@@ -73,8 +73,8 @@ body {
 .badge-red { background: #fef2f2; color: #dc2626; }
 .badge-orange { background: #fff7ed; color: #ea580c; }
 
-.modal { opacity: 0; visibility: hidden; transition: all 0.2s ease; z-index: 100; }
-.modal.active { opacity: 1; visibility: visible; }
+.modal { opacity: 0; visibility: hidden; pointer-events: none; transition: all 0.2s ease; z-index: 100; }
+.modal.active { opacity: 1; visibility: visible; pointer-events: auto; }
 .modal-content { transform: translateY(20px); transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .modal.active .modal-content { transform: translateY(0); }
 .form-group label { display: block; font-size: 12px; font-weight: 600; color: #4b5563; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
