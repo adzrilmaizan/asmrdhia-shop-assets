@@ -67,3 +67,136 @@ body {
 .search-highlight { background-color: #fef08a; padding: 0 2px; border-radius: 4px; color: #0f172a; font-weight: 800; } 
 
 .secret-trigger { cursor: default; user-select: none; }
+
+/* =========================
+   Recent Activity (Order Admin)
+   ========================= */
+.recent-activity-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.recent-activity-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+.recent-activity-title i {
+  color: #64748b;
+  font-size: 18px;
+}
+
+.recent-activity-refresh {
+  font-size: 12px;
+  font-weight: 800;
+  color: #64748b;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.recent-activity-refresh:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.recent-activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.recent-activity-item {
+  background: #ffffff;
+  border: 1px solid #f1f5f9;
+  border-radius: 20px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.recent-activity-item:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05);
+  transform: translateY(-2px);
+}
+
+.ra-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #e2e8f0;
+}
+
+.ra-icon i {
+  font-size: 18px;
+}
+
+.ra-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.ra-title {
+  font-size: 13px;
+  font-weight: 900;
+  color: #0f172a;
+  line-height: 1.2;
+  margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ra-sub {
+  font-size: 12px;
+  font-weight: 700;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ra-time {
+  font-size: 11px;
+  font-weight: 900;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.ra-empty {
+  font-size: 13px;
+  font-weight: 700;
+  color: #94a3b8;
+  padding: 10px 2px;
+}
+
+/* Color helpers (match badge vibe) */
+.ra-blue   { color: #2563eb; }
+.ra-green  { color: #059669; }
+.ra-amber  { color: #d97706; }
+.ra-rose   { color: #dc2626; }
+.ra-slate  { color: #475569; }
+
+.ra-blue-bg  { background: #eff6ff; border-color: #bfdbfe; }
+.ra-green-bg { background: #ecfdf5; border-color: #a7f3d0; }
+.ra-amber-bg { background: #fffbeb; border-color: #fde68a; }
+.ra-rose-bg  { background: #fef2f2; border-color: #fecaca; }
