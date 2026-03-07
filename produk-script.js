@@ -133,63 +133,47 @@ const ASMRDHIA_APP = {
     
     // ========== INTERSECTION OBSERVER FOR VIEWS ==========
     setupIntersectionObserver() {
-        // Remove existing observer if any
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const productCard = entry.target.closest('.product-card');
-                    if (productCard) {
-                        // Try multiple methods to get product ID
-                        let productId = null;
-                        
-                        // Method 1: From onclick attribute of edit button
-                        const editBtn = productCard.querySelector('[onclick*="editProduct"]');
-                        if (editBtn) {
-                            const match = editBtn.getAttribute('onclick').match(/'([^']+)'/);
-                            if (match && match[1]) {
-                                productId = match[1];
-                            }
-                        }
-                        
-                        // Method 2: From onclick attribute of preview button
-                        if (!productId) {
-                            const previewBtn = productCard.querySelector('[onclick*="previewProduct"]');
-                            if (previewBtn) {
-                                const match = previewBtn.getAttribute('onclick').match(/'([^']+)'/);
-                                if (match && match[1]) {
-                                    productId = match[1];
-                                }
-                            }
-                        }
-                        
-                        // Method 3: From data attribute (if we add later)
-                        if (!productId) {
-                            productId = productCard.dataset.productId;
-                        }
-                        
-                        if (productId) {
-                            this.trackView(productId);
-                        }
+    // Remove existing observer if any
+    if (this.observer) {
+        this.observer.disconnect();
+        console.log('Observer lama dibuang');
+    }
+    
+    // Track viewed products to prevent double counting
+    if (!this.viewedProducts) {
+        this.viewedProducts = new Set();
+    }
+    
+    this.observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                const productCard = entry.target.closest('.product-card');
+                if (productCard) {
+                    const productId = productCard.dataset.productId;
+                    
+                    // Only track if not viewed before
+                    if (productId && !this.viewedProducts.has(productId)) {
+                        console.log('Track view untuk produk baru:', productId);
+                        this.viewedProducts.add(productId);
+                        this.trackView(productId);
                     }
-                    observer.unobserve(entry.target); // Only track once per product card
                 }
-            });
-        }, { 
-            threshold: 0.3, // Trigger when 30% visible
-            rootMargin: '0px' 
+                // FIX: guna this.observer, bukan observer
+                this.observer.unobserve(entry.target);
+            }
         });
+    }, { 
+        threshold: 0.3,
+        rootMargin: '0px' 
+    });
 
-        // Observe all product cards
-        setTimeout(() => {
-            document.querySelectorAll('.product-card .card-img').forEach(img => {
-                this.observer.observe(img);
-            });
-        }, 100);
-    },
+    // Observe all product cards
+    const images = document.querySelectorAll('.product-card .card-img');
+    console.log(`Memantau ${images.length} produk`);
+    images.forEach(img => {
+        this.observer.observe(img);
+    });
+},
     
     // ========== POINT SETTINGS ==========
     populatePointSettings() {
