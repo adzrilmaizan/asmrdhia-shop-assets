@@ -93,38 +93,64 @@ const ASMRDHIA_APP = {
     
     // ========== VIEW TRACKING ==========
     async trackView(productId) {
+        // Prevent multiple simultaneous tracking
+        if (this._trackingView && this._trackingView[productId]) {
+            return;
+        }
+        
+        if (!this._trackingView) this._trackingView = {};
+        this._trackingView[productId] = true;
+        
         try {
-            // Send to server
             await this.request('POST', {
                 action: 'track_view',
                 product_id: productId
             });
             
-            // Update local state
+            // UPDATE TERUS tanpa render semula
             const product = this.state.products.find(p => p.id == productId);
             if (product) {
                 product.views = (product.views || 0) + 1;
-                this.renderProductGrid(); // Refresh display
+                
+                // UPDATE COUNTER TERUS dalam DOM
+                const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+                if (productCard) {
+                    const viewSpan = productCard.querySelector('.ri-eye-line').parentElement;
+                    if (viewSpan) {
+                        viewSpan.innerHTML = `<i class="ri-eye-line"></i> ${product.views} views`;
+                    }
+                }
             }
         } catch (e) {
             console.error('Error tracking view:', e);
+        } finally {
+            // Release lock after 2 seconds
+            setTimeout(() => {
+                delete this._trackingView[productId];
+            }, 2000);
         }
     },
     
     // ========== CLICK TRACKING ==========
     async trackClick(productId) {
         try {
-            // Send to server
             await this.request('POST', {
                 action: 'track_click',
                 product_id: productId
             });
             
-            // Update local state
             const product = this.state.products.find(p => p.id == productId);
             if (product) {
                 product.clicks = (product.clicks || 0) + 1;
-                this.renderProductGrid(); // Refresh display
+                
+                // UPDATE TERUS dalam DOM
+                const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
+                if (productCard) {
+                    const clickSpan = productCard.querySelector('.ri-mouse-line').parentElement;
+                    if (clickSpan) {
+                        clickSpan.innerHTML = `<i class="ri-mouse-line"></i> ${product.clicks} clicks`;
+                    }
+                }
             }
         } catch (e) {
             console.error('Error tracking click:', e);
@@ -133,47 +159,45 @@ const ASMRDHIA_APP = {
     
     // ========== INTERSECTION OBSERVER FOR VIEWS ==========
     setupIntersectionObserver() {
-    // Remove existing observer if any
-    if (this.observer) {
-        this.observer.disconnect();
-        console.log('Observer lama dibuang');
-    }
-    
-    // Track viewed products to prevent double counting
-    if (!this.viewedProducts) {
-        this.viewedProducts = new Set();
-    }
-    
-    this.observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const productCard = entry.target.closest('.product-card');
-                if (productCard) {
-                    const productId = productCard.dataset.productId;
-                    
-                    // Only track if not viewed before
-                    if (productId && !this.viewedProducts.has(productId)) {
-                        console.log('Track view untuk produk baru:', productId);
-                        this.viewedProducts.add(productId);
-                        this.trackView(productId);
+        // Remove existing observer if any
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        
+        // Track viewed products to prevent double counting
+        if (!this.viewedProducts) {
+            this.viewedProducts = new Set();
+        }
+        
+        this.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const productCard = entry.target.closest('.product-card');
+                    if (productCard) {
+                        const productId = productCard.dataset.productId;
+                        
+                        // Only track if not viewed before
+                        if (productId && !this.viewedProducts.has(productId)) {
+                            this.viewedProducts.add(productId);
+                            this.trackView(productId);
+                        }
                     }
+                    this.observer.unobserve(entry.target);
                 }
-                // FIX: guna this.observer, bukan observer
-                this.observer.unobserve(entry.target);
-            }
+            });
+        }, { 
+            threshold: 0.3,
+            rootMargin: '0px' 
         });
-    }, { 
-        threshold: 0.3,
-        rootMargin: '0px' 
-    });
 
-    // Observe all product cards
-    const images = document.querySelectorAll('.product-card .card-img');
-    console.log(`Memantau ${images.length} produk`);
-    images.forEach(img => {
-        this.observer.observe(img);
-    });
-},
+        // Observe all product cards
+        setTimeout(() => {
+            const images = document.querySelectorAll('.product-card .card-img');
+            images.forEach(img => {
+                this.observer.observe(img);
+            });
+        }, 100);
+    },
     
     // ========== POINT SETTINGS ==========
     populatePointSettings() {
@@ -424,7 +448,12 @@ const ASMRDHIA_APP = {
         const grid = document.getElementById('product-grid');
         grid.innerHTML = '';
         const list = data || this.state.products;
-       
+        
+        // Reset viewed products untuk search/filter
+        if (this.viewedProducts) {
+            this.viewedProducts.clear();
+        }
+        
         if (list.length === 0) {
             grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-2xl border border-gray-100 shadow-sm"><i class="ri-plant-line text-4xl text-gray-300 block mb-2"></i><p class="text-gray-500 font-medium">Tiada produk dijumpai.</p></div>`;
             document.getElementById('prod-count').innerText = 0;
@@ -513,10 +542,10 @@ const ASMRDHIA_APP = {
         document.getElementById('prod-count').innerText = list.length;
         this.updateTableCountdowns();
         
-        // Re-setup observer for new products
+        // Setup observer for new products
         setTimeout(() => {
             this.setupIntersectionObserver();
-        }, 100);
+        }, 500);
     },
     
     searchProduct(val) {
