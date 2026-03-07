@@ -2,6 +2,7 @@ const ASMRDHIA_APP = {
     config: { worker: "https://shopapi.asmrdhia.com" },
     state: { products: [], coupons: [], settings: {} },
     intervals: { global: null, preview: null },
+    
     async request(method, bodyData = null, customAction = null) {
         const options = { method: method, headers: { 'Content-Type': 'application/json' } };
         if (bodyData) options.body = JSON.stringify(bodyData);
@@ -11,6 +12,7 @@ const ASMRDHIA_APP = {
         const res = await fetch(url, options);
         return await res.json();
     },
+    
     safeJSONParse(data) {
         if (!data) return [];
         if (typeof data === 'object') return data;
@@ -35,6 +37,7 @@ const ASMRDHIA_APP = {
         }
         return data;
     },
+    
     parseMedia(imgData) {
         if (!imgData || imgData.length < 5) return [];
         try {
@@ -45,17 +48,21 @@ const ASMRDHIA_APP = {
             return [imgData];
         }
     },
+    
     getYoutubeThumbnail(url) {
         if (!url) return null;
         const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
         const match = url.match(regExp);
         return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
     },
+    
     getEmbedUrl(url) {
         const regExp = /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/;
         const match = url.match(regExp);
         return match ? `https://www.youtube.com/embed/${match[1]}?autoplay=1` : null;
     },
+    
+    // ========== INIT FUNCTION ==========
     async init() {
         try {
             const [resProd, resCoup, resSet] = await Promise.all([
@@ -63,29 +70,141 @@ const ASMRDHIA_APP = {
                 this.request('GET', null, 'get_coupons'),
                 this.request('GET', null, 'get_shop_settings')
             ]);
+            
             this.state.products = resProd.menus || [];
             this.state.coupons = resCoup.coupons || [];
             this.state.settings = resSet.data || {};
+            
             this.renderProductGrid();
             this.renderCoupons();
             this.populateProductDropdown();
             this.populatePointSettings();
             this.startGlobalCountdowns();
+            
+            // Setup view tracking after products are rendered
+            setTimeout(() => {
+                this.setupIntersectionObserver();
+            }, 500);
+            
         } catch (e) {
             Swal.fire('Ralat', 'Gagal memuatkan data dari server', 'error');
         }
     },
+    
+    // ========== VIEW TRACKING ==========
+    async trackView(productId) {
+        try {
+            // Send to server
+            await this.request('POST', {
+                action: 'track_view',
+                product_id: productId
+            });
+            
+            // Update local state
+            const product = this.state.products.find(p => p.id == productId);
+            if (product) {
+                product.views = (product.views || 0) + 1;
+                this.renderProductGrid(); // Refresh display
+            }
+        } catch (e) {
+            console.error('Error tracking view:', e);
+        }
+    },
+    
+    // ========== CLICK TRACKING ==========
+    async trackClick(productId) {
+        try {
+            // Send to server
+            await this.request('POST', {
+                action: 'track_click',
+                product_id: productId
+            });
+            
+            // Update local state
+            const product = this.state.products.find(p => p.id == productId);
+            if (product) {
+                product.clicks = (product.clicks || 0) + 1;
+                this.renderProductGrid(); // Refresh display
+            }
+        } catch (e) {
+            console.error('Error tracking click:', e);
+        }
+    },
+    
+    // ========== INTERSECTION OBSERVER FOR VIEWS ==========
+    setupIntersectionObserver() {
+        // Remove existing observer if any
+        if (this.observer) {
+            this.observer.disconnect();
+        }
+        
+        this.observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const productCard = entry.target.closest('.product-card');
+                    if (productCard) {
+                        // Try multiple methods to get product ID
+                        let productId = null;
+                        
+                        // Method 1: From onclick attribute of edit button
+                        const editBtn = productCard.querySelector('[onclick*="editProduct"]');
+                        if (editBtn) {
+                            const match = editBtn.getAttribute('onclick').match(/'([^']+)'/);
+                            if (match && match[1]) {
+                                productId = match[1];
+                            }
+                        }
+                        
+                        // Method 2: From onclick attribute of preview button
+                        if (!productId) {
+                            const previewBtn = productCard.querySelector('[onclick*="previewProduct"]');
+                            if (previewBtn) {
+                                const match = previewBtn.getAttribute('onclick').match(/'([^']+)'/);
+                                if (match && match[1]) {
+                                    productId = match[1];
+                                }
+                            }
+                        }
+                        
+                        // Method 3: From data attribute (if we add later)
+                        if (!productId) {
+                            productId = productCard.dataset.productId;
+                        }
+                        
+                        if (productId) {
+                            this.trackView(productId);
+                        }
+                    }
+                    observer.unobserve(entry.target); // Only track once per product card
+                }
+            });
+        }, { 
+            threshold: 0.3, // Trigger when 30% visible
+            rootMargin: '0px' 
+        });
+
+        // Observe all product cards
+        setTimeout(() => {
+            document.querySelectorAll('.product-card .card-img').forEach(img => {
+                this.observer.observe(img);
+            });
+        }, 100);
+    },
+    
+    // ========== POINT SETTINGS ==========
     populatePointSettings() {
         document.getElementById('set-pt-star').value = this.state.settings.pt_reward_star || 1;
         document.getElementById('set-pt-comm').value = this.state.settings.pt_reward_comment || 5;
         document.getElementById('set-pt-long').value = this.state.settings.pt_reward_long || 10;
         document.getElementById('set-pt-rate').value = this.state.settings.pt_redeem_value || 0.10;
     },
+    
     async savePointSettings() {
         const btn = document.getElementById('btn-save-pts');
         const og = btn.innerHTML;
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> Menyimpan...';
         btn.disabled = true;
+        
         const payload = {
             action: 'save_shop_settings',
             pt_reward_star: document.getElementById('set-pt-star').value,
@@ -93,10 +212,18 @@ const ASMRDHIA_APP = {
             pt_reward_long: document.getElementById('set-pt-long').value,
             pt_redeem_value: document.getElementById('set-pt-rate').value
         };
+        
         try {
             const res = await this.request('POST', payload);
             if(res.status === 'success') {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Tetapan Points disimpan!', showConfirmButton: false, timer: 1500 });
+                Swal.fire({ 
+                    toast: true, 
+                    position: 'top-end', 
+                    icon: 'success', 
+                    title: 'Tetapan Points disimpan!', 
+                    showConfirmButton: false, 
+                    timer: 1500 
+                });
             } else throw new Error(res.msg);
         } catch(e) {
             Swal.fire('Ralat', e.message, 'error');
@@ -105,10 +232,13 @@ const ASMRDHIA_APP = {
             btn.innerHTML = og;
         }
     },
+    
+    // ========== COUNTDOWN FUNCTIONS ==========
     isProductLocked(liveDate) {
         if (!liveDate) return false;
         return new Date(liveDate) > new Date();
     },
+    
     updateCountdownDisplay(elementId, targetDate) {
         const element = document.getElementById(elementId);
         if (!element) return false;
@@ -137,19 +267,27 @@ const ASMRDHIA_APP = {
         `;
         return true;
     },
+    
     updateTableCountdowns() {
         this.state.products.forEach(p => {
             const meta = this.parseData(p.description);
             if (meta.isCountdown == 1 && meta.liveDate) {
                 const isLocked = this.isProductLocked(meta.liveDate);
-                if (isLocked) { this.updateCountdownDisplay(`grid-cd-${p.id}`, meta.liveDate); }
+                if (isLocked) { 
+                    this.updateCountdownDisplay(`grid-cd-${p.id}`, meta.liveDate); 
+                }
             }
         });
     },
+    
     startGlobalCountdowns() {
         if (this.intervals.global) clearInterval(this.intervals.global);
-        this.intervals.global = setInterval(() => { this.updateTableCountdowns(); }, 1000);
+        this.intervals.global = setInterval(() => { 
+            this.updateTableCountdowns(); 
+        }, 1000);
     },
+    
+    // ========== COUPON FUNCTIONS ==========
     populateProductDropdown() {
         const select = document.getElementById('new_coupon_target');
         if (!select) return;
@@ -163,22 +301,26 @@ const ASMRDHIA_APP = {
             });
         }
     },
+    
     renderCoupons() {
         const list = document.getElementById('coupon-list');
         if (!list) return;
        
         document.getElementById('coupon-count').innerText = this.state.coupons.length;
         list.innerHTML = '';
+        
         if (this.state.coupons.length === 0) {
             list.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-400 font-medium bg-white">Tiada kupon aktif dikesan.</td></tr>';
             return;
         }
+        
         this.state.coupons.forEach(c => {
             let targetName = '<span class="bg-blue-50 text-blue-600 px-2 py-1 rounded text-xs font-bold">GLOBAL</span>';
             if (c.target !== 'ALL') {
                 const prod = this.state.products.find(p => p.id === c.target);
                 targetName = prod ? `<span class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-medium truncate max-w-[150px] inline-block" title="${prod.name}">${prod.name}</span>` : `<span class="text-red-500 text-xs">Produk Dibuang</span>`;
             }
+            
             let limitHtml = '<span class="text-xs text-gray-500 font-medium bg-gray-100 px-2 py-1 rounded-md">Unlimited</span>';
             if (c.max_limit && parseInt(c.max_limit) > 0) {
                 let used = parseInt(c.used_count) || 0;
@@ -191,6 +333,7 @@ const ASMRDHIA_APP = {
             } else if (c.used_count && parseInt(c.used_count) > 0) {
                  limitHtml = `<span class="text-xs text-blue-600 font-bold bg-blue-50 px-2 py-1 rounded-md">Diguna: ${c.used_count}</span>`;
             }
+            
             list.innerHTML += `
                 <tr>
                     <td><div class="font-mono font-bold text-gray-900">${c.code}</div></td>
@@ -206,22 +349,40 @@ const ASMRDHIA_APP = {
             `;
         });
     },
+    
     async addCoupon() {
         const btn = document.getElementById('btn-add-coupon');
         const code = document.getElementById('new_coupon_code').value.toUpperCase().trim();
         const val = parseFloat(document.getElementById('new_coupon_val').value);
         const limitStr = document.getElementById('new_coupon_limit').value;
         const target = document.getElementById('new_coupon_target').value;
+        
         if (!code) return Swal.fire('Gagal', 'Sila masukkan Kod Kupon', 'warning');
         if (isNaN(val) || val <= 0) return Swal.fire('Gagal', 'Nilai potongan tidak sah', 'warning');
+        
         const limit = limitStr ? parseInt(limitStr) : 0;
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
        
         try {
-            const res = await this.request('POST', { action: 'add_coupon', code: code, val: val, target: target, limit: limit });
+            const res = await this.request('POST', { 
+                action: 'add_coupon', 
+                code: code, 
+                val: val, 
+                target: target, 
+                limit: limit 
+            });
+            
             if (res.status === 'success') {
-                Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Kupon ditambah!', showConfirmButton: false, timer: 1500 });
+                Swal.fire({ 
+                    toast: true, 
+                    position: 'top-end', 
+                    icon: 'success', 
+                    title: 'Kupon ditambah!', 
+                    showConfirmButton: false, 
+                    timer: 1500 
+                });
+                
                 document.getElementById('new_coupon_code').value = '';
                 document.getElementById('new_coupon_val').value = '';
                 document.getElementById('new_coupon_limit').value = '';
@@ -238,6 +399,7 @@ const ASMRDHIA_APP = {
             btn.innerHTML = '<i class="ri-add-line text-lg"></i> Tambah';
         }
     },
+    
     async deleteCoupon(code) {
         const res = await Swal.fire({
             title: `Padam Kupon?`,
@@ -249,9 +411,18 @@ const ASMRDHIA_APP = {
         });
        
         if (res.isConfirmed) {
-            Swal.fire({ title: 'Memadam...', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+            Swal.fire({ 
+                title: 'Memadam...', 
+                didOpen: () => Swal.showLoading(), 
+                allowOutsideClick: false 
+            });
+            
             try {
-                const response = await this.request('POST', { action: 'delete_coupon', code: code });
+                const response = await this.request('POST', { 
+                    action: 'delete_coupon', 
+                    code: code 
+                });
+                
                 if (response.status === 'success') {
                     this.state.coupons = this.state.coupons.filter(c => c.code !== code);
                     this.renderCoupons();
@@ -263,6 +434,8 @@ const ASMRDHIA_APP = {
             }
         }
     },
+    
+    // ========== PRODUCT GRID RENDERING ==========
     renderProductGrid(data = null) {
         const grid = document.getElementById('product-grid');
         grid.innerHTML = '';
@@ -273,6 +446,7 @@ const ASMRDHIA_APP = {
             document.getElementById('prod-count').innerText = 0;
             return;
         }
+        
         list.forEach(p => {
             const meta = this.parseData(p.description);
             const vars = this.safeJSONParse(p.variations);
@@ -288,6 +462,7 @@ const ASMRDHIA_APP = {
            
             const isScheduled = meta.isCountdown == 1 && meta.liveDate;
             const isLocked = isScheduled ? this.isProductLocked(meta.liveDate) : false;
+            
             let badgesHTML = '';
             if (meta.isActive === 0) badgesHTML += `<span class="badge badge-outline"><i class="ri-eye-off-line"></i> DRAFT</span>`;
             if (actualStock <= 0 && meta.isActive === 1) badgesHTML += `<span class="badge badge-red">HABIS STOK</span>`;
@@ -298,6 +473,7 @@ const ASMRDHIA_APP = {
             if (discount > 0 && discount < price) {
                 priceHTML = `<div class="text-xs text-gray-400 line-through">RM ${price.toFixed(2)}</div><div class="font-bold text-emerald-600 text-lg">RM ${discount.toFixed(2)}</div>`;
             }
+            
             let lockHTML = '';
             if (isLocked) {
                 const cid = `grid-cd-${p.id}`;
@@ -308,16 +484,20 @@ const ASMRDHIA_APP = {
                     <div id="${cid}" class="countdown-timer"></div>
                 </div>`;
             }
+            
+            // MAIN PRODUCT CARD WITH CLICK TRACKING
             grid.innerHTML += `
-                <div class="product-card group ${meta.isActive === 0 ? 'opacity-70 grayscale-[30%]' : ''}">
+                <div class="product-card group ${meta.isActive === 0 ? 'opacity-70 grayscale-[30%]' : ''}" 
+                     data-product-id="${p.id}"
+                     onclick="ASMRDHIA_APP.trackClick('${p.id}')">
                     <div class="card-img-container">
                         <img src="${img}" class="card-img" loading="lazy">
                         ${this.getYoutubeThumbnail(rawImgUrl) ? '<div class="absolute inset-0 flex items-center justify-center text-white/80 pointer-events-none"><i class="ri-play-circle-fill text-5xl drop-shadow-md"></i></div>' : ''}
                         <div class="absolute top-3 left-3 flex flex-col gap-1 z-20 items-start">${badgesHTML}</div>
                         ${lockHTML}
-                        <div class="card-overlay">
-                            <button onclick="ASMRDHIA_APP.editProduct('${p.id}')" class="action-btn-circle" title="Edit"><i class="ri-pencil-line"></i></button>
-                            <button onclick="ASMRDHIA_APP.previewProduct('${p.id}')" class="action-btn-circle" title="Preview"><i class="ri-eye-line"></i></button>
+                        <div class="card-overlay" onclick="event.stopPropagation()">
+                            <button onclick="event.stopPropagation(); ASMRDHIA_APP.editProduct('${p.id}')" class="action-btn-circle" title="Edit"><i class="ri-pencil-line"></i></button>
+                            <button onclick="event.stopPropagation(); ASMRDHIA_APP.previewProduct('${p.id}')" class="action-btn-circle" title="Preview"><i class="ri-eye-line"></i></button>
                         </div>
                     </div>
                     <div class="p-4 flex flex-col justify-between flex-1 bg-white">
@@ -325,7 +505,7 @@ const ASMRDHIA_APP = {
                             <h3 class="font-bold text-gray-900 text-[15px] leading-tight mb-1 line-clamp-2" title="${p.name}">${p.name}</h3>
                         </div>
                         
-                        <!-- TAMBAHAN BARU: Views & Clicks -->
+                        <!-- VIEWS & CLICKS COUNTER -->
                         <div class="flex gap-4 mt-2 text-xs">
                             <span class="flex items-center gap-1 text-emerald-600 font-medium">
                                 <i class="ri-eye-line"></i> ${p.views || 0} views
@@ -345,14 +525,26 @@ const ASMRDHIA_APP = {
                 </div>
             `;
         });
+        
         document.getElementById('prod-count').innerText = list.length;
         this.updateTableCountdowns();
+        
+        // Re-setup observer for new products
+        setTimeout(() => {
+            this.setupIntersectionObserver();
+        }, 100);
     },
+    
     searchProduct(val) {
         const term = val.toLowerCase();
-        const filtered = this.state.products.filter(p => p.name.toLowerCase().includes(term) || (p.category && p.category.toLowerCase().includes(term)));
+        const filtered = this.state.products.filter(p => 
+            p.name.toLowerCase().includes(term) || 
+            (p.category && p.category.toLowerCase().includes(term))
+        );
         this.renderProductGrid(filtered);
     },
+    
+    // ========== MODAL FUNCTIONS ==========
     openModal(edit=false) {
         document.getElementById('product-modal').classList.add('active');
         document.getElementById('modal-title').innerText = edit ? "Edit Produk" : "Tambah Produk Baru";
@@ -363,6 +555,7 @@ const ASMRDHIA_APP = {
     closeModal() {
         document.getElementById('product-modal').classList.remove('active');
     },
+    
     scrollGallery(direction) {
         const gallery = document.getElementById('prev-image-gallery');
         if(gallery) {
@@ -370,12 +563,14 @@ const ASMRDHIA_APP = {
             gallery.scrollBy({ left: direction * scrollAmount, behavior: 'smooth' });
         }
     },
+    
     playVideo(containerId, embedUrl) {
         const container = document.getElementById(containerId);
         if(container) {
             container.innerHTML = `<iframe width="100%" height="100%" src="${embedUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
         }
     },
+    
     closePreviewModal() {
         document.getElementById('preview-modal').classList.remove('active');
         if (this.intervals.preview) clearInterval(this.intervals.preview);
@@ -416,6 +611,7 @@ const ASMRDHIA_APP = {
         this.updateFormPreview();
         this.calcTotalStock();
     },
+    
     addMainMedia(url = '') {
         const list = document.getElementById('main-media-list');
         if (!list) return;
@@ -430,6 +626,7 @@ const ASMRDHIA_APP = {
         list.appendChild(div);
         this.updateFormPreview();
     },
+    
     updateFormPreview() {
         const grid = document.getElementById('media-preview-grid');
         if (!grid) return;
@@ -460,6 +657,7 @@ const ASMRDHIA_APP = {
             }
         }
     },
+    
     updateManualStock() {
         const stockInput = document.getElementById('prod-stock');
         const displayInput = document.getElementById('prod-stock-display');
@@ -467,6 +665,7 @@ const ASMRDHIA_APP = {
             displayInput.value = stockInput.value;
         }
     },
+    
     calcTotalStock() {
         let total = 0;
         const rows = document.querySelectorAll('#variation-list .var-row');
@@ -502,6 +701,7 @@ const ASMRDHIA_APP = {
        
         if(displayInput) displayInput.value = total;
     },
+    
     addVarRow(l='', p='', s='', w='', mediaArr=[]) {
         const container = document.getElementById('variation-list');
         if (!container) return;
@@ -514,6 +714,7 @@ const ASMRDHIA_APP = {
         mediaArr.forEach(url => {
             mediaHtml += `<div class="flex gap-2 items-center"><input type="text" class="var-media-input clean-input !py-1.5 !px-2 text-xs" placeholder="URL Gambar Khas" value="${url}"><button type="button" onclick="this.parentElement.remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"><i class="ri-close-line"></i></button></div>`;
         });
+        
         div.innerHTML = `
             <button type="button" onclick="this.parentElement.remove(); ASMRDHIA_APP.calcTotalStock()" class="absolute top-2 right-2 text-gray-300 hover:text-red-500 transition"><i class="ri-close-circle-fill text-xl"></i></button>
             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 pr-6">
@@ -534,6 +735,7 @@ const ASMRDHIA_APP = {
         container.appendChild(div);
         this.calcTotalStock();
     },
+    
     addVarMediaInput(btn) {
         const container = btn.closest('.var-row')?.querySelector('.var-media-container');
         if(!container) return;
@@ -544,6 +746,7 @@ const ASMRDHIA_APP = {
         div.innerHTML = `<input type="text" class="var-media-input clean-input !py-1.5 !px-2 text-xs" placeholder="URL Gambar Khas"><button type="button" onclick="this.parentElement.remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"><i class="ri-close-line"></i></button>`;
         container.appendChild(div);
     },
+    
     toggleCountdown(show) {
         const countdownBox = document.getElementById('countdown-box');
         const countdownPreview = document.getElementById('countdown-preview');
@@ -557,9 +760,12 @@ const ASMRDHIA_APP = {
         if(date) {
             this.updateCountdownDisplay('countdown-display', date);
             if (this.intervals.preview) clearInterval(this.intervals.preview);
-            this.intervals.preview = setInterval(() => { this.updateCountdownDisplay('countdown-display', date); }, 1000);
+            this.intervals.preview = setInterval(() => { 
+                this.updateCountdownDisplay('countdown-display', date); 
+            }, 1000);
         }
     },
+    
     editProduct(id) {
         const p = this.state.products.find(x => x.id == id);
         if (!p) return;
@@ -593,6 +799,7 @@ const ASMRDHIA_APP = {
             });
         }
         this.calcTotalStock();
+        
         if (meta.isCountdown == 1) {
             document.getElementById('prod-is-countdown').checked = true;
             this.toggleCountdown(true);
@@ -606,6 +813,7 @@ const ASMRDHIA_APP = {
         }
         this.openModal(true);
     },
+    
     async saveProduct() {
         const btn = document.getElementById('btn-save');
         const ogText = btn.innerHTML;
@@ -613,13 +821,16 @@ const ASMRDHIA_APP = {
         const name = document.getElementById('prod-name').value;
         const price = document.getElementById('prod-price').value;
         if (!name || !price) return Swal.fire('Ralat', 'Nama & Harga wajib diisi', 'warning');
+        
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i> Menyimpan...';
+        
         let mainMedia = [];
         document.querySelectorAll('.main-media-input').forEach(inp => {
             if(inp.value.trim()) mainMedia.push(inp.value.trim());
         });
         const finalImgData = mainMedia.length > 0 ? JSON.stringify(mainMedia) : '';
+        
         let variations = [];
         document.querySelectorAll('#variation-list .var-row').forEach(row => {
             const vName = row.querySelector('.var-name')?.value;
@@ -632,6 +843,7 @@ const ASMRDHIA_APP = {
                 if(inp.value.trim()) varMedia.push(inp.value.trim());
             });
             const vImgData = varMedia.length > 0 ? JSON.stringify(varMedia) : '';
+            
             if(vName) variations.push({
                 label: vName,
                 price: vPrice,
@@ -640,11 +852,16 @@ const ASMRDHIA_APP = {
                 image: vImgData
             });
         });
-        const finalStock = variations.length > 0 ? variations.reduce((a,b)=>a+b.stock,0) : (parseInt(document.getElementById('prod-stock')?.value)||0);
+        
+        const finalStock = variations.length > 0 ? 
+            variations.reduce((a,b)=>a+b.stock,0) : 
+            (parseInt(document.getElementById('prod-stock')?.value)||0);
+            
         const finalDiscount = parseFloat(document.getElementById('prod-discount')?.value) || 0;
         const isC = document.getElementById('prod-is-countdown')?.checked ? 1 : 0;
         const lDate = document.getElementById('prod-live-date')?.value;
         const { cleanDesc } = this.parseData(document.getElementById('prod-desc')?.value);
+        
         const configObj = {
             d: finalDiscount,
             s: finalStock,
@@ -654,6 +871,7 @@ const ASMRDHIA_APP = {
         };
        
         const desc = `[CONFIG:${JSON.stringify(configObj)}][/CONFIG] ${cleanDesc || ''}`;
+        
         const data = {
             action: 'save_menu_item',
             id: document.getElementById('prod-id')?.value || 'P' + Date.now(),
@@ -669,6 +887,7 @@ const ASMRDHIA_APP = {
             live_date: configObj.c ? configObj.t : null,
             is_free_shipping: document.getElementById('prod-free-ship')?.checked ? 1 : 0
         };
+        
         try {
             const res = await this.request('POST', data);
             if (res.status === 'success') {
@@ -685,6 +904,7 @@ const ASMRDHIA_APP = {
                     this.request('GET'),
                     this.request('GET', null, 'get_coupons')
                 ]);
+                
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
                
@@ -699,6 +919,7 @@ const ASMRDHIA_APP = {
             btn.innerHTML = ogText;
         }
     },
+    
     async deleteProduct() {
         const res = await Swal.fire({
             title: 'Padam Produk?',
@@ -715,6 +936,7 @@ const ASMRDHIA_APP = {
                     action: 'delete_menu_item',
                     id: document.getElementById('prod-id')?.value
                 });
+                
                 Swal.fire('Dipadam', 'Produk berjaya dipadam', 'success');
                 this.closeModal();
                
@@ -722,6 +944,7 @@ const ASMRDHIA_APP = {
                     this.request('GET'),
                     this.request('GET', null, 'get_coupons')
                 ]);
+                
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
                
@@ -733,11 +956,14 @@ const ASMRDHIA_APP = {
             }
         }
     },
+    
     previewProduct(id = null) {
         let name, mediaArr = [], price, discount, cat, desc, stock, isActive, variations = [], isCountdown, liveDate, isFreeShip;
+        
         if (id) {
             const p = this.state.products.find(x => x.id == id);
             if (!p) return;
+            
             const meta = this.parseData(p.description);
             name = p.name;
             price = parseFloat(p.price);
@@ -745,7 +971,9 @@ const ASMRDHIA_APP = {
             cat = p.category;
             desc = meta.cleanDesc;
             variations = this.safeJSONParse(p.variations);
-            stock = variations.length > 0 ? variations.reduce((a, v) => a + (parseInt(v.stock)||0), 0) : meta.stock;
+            stock = variations.length > 0 ? 
+                variations.reduce((a, v) => a + (parseInt(v.stock)||0), 0) : 
+                meta.stock;
             isActive = meta.isActive;
             isCountdown = meta.isCountdown;
             liveDate = meta.liveDate;
@@ -772,9 +1000,11 @@ const ASMRDHIA_APP = {
                 if(vName) variations.push({ label: vName, stock: parseInt(vStock) || 0 });
             });
         }
+        
         document.getElementById('prev-name').innerText = name || 'Nama Produk';
         document.getElementById('prev-cat').innerText = cat || 'UMUM';
         document.getElementById('prev-desc').innerText = desc || 'Tiada penerangan.';
+        
         const gallery = document.getElementById('prev-image-gallery');
         const scrollNav = document.getElementById('prev-scroll-nav');
        
@@ -801,16 +1031,15 @@ const ASMRDHIA_APP = {
             }
            
             if(scrollNav) {
-                if(mArr.length > 1) {
-                    scrollNav.style.display = 'block';
-                } else {
-                    scrollNav.style.display = 'none';
-                }
+                scrollNav.style.display = mArr.length > 1 ? 'block' : 'none';
             }
         };
+        
         renderGallery(mediaArr);
+        
         const priceCont = document.getElementById('prev-price-container');
         const promoBadge = document.getElementById('prev-promo-badge');
+        
         if (discount > 0 && discount < price && priceCont) {
             priceCont.innerHTML = `<span class="text-gray-400 line-through text-sm">RM${price.toFixed(2)}</span> <span class="text-2xl font-bold text-emerald-600">RM${discount.toFixed(2)}</span>`;
             if(promoBadge) {
@@ -821,6 +1050,7 @@ const ASMRDHIA_APP = {
             if(priceCont) priceCont.innerHTML = `<span class="text-2xl font-bold text-gray-900">RM${price.toFixed(2)}</span>`;
             if(promoBadge) promoBadge.style.display = 'none';
         }
+        
         const stockBadge = document.getElementById('prev-stock-badge');
         if(stockBadge) {
             if (isActive === 0) {
@@ -837,11 +1067,12 @@ const ASMRDHIA_APP = {
                 stockBadge.style.display = 'none';
             }
         }
+        
         const freeShipBadge = document.getElementById('prev-freeship-badge');
         if(freeShipBadge) {
-            if (isFreeShip === 1) freeShipBadge.style.display = 'inline-flex';
-            else freeShipBadge.style.display = 'none';
+            freeShipBadge.style.display = isFreeShip === 1 ? 'inline-flex' : 'none';
         }
+        
         const varCont = document.getElementById('prev-var-container');
         const varList = document.getElementById('prev-var-list');
         if(varList) varList.innerHTML = '';
@@ -881,6 +1112,7 @@ const ASMRDHIA_APP = {
         } else if(varCont) {
             varCont.classList.add('hidden');
         }
+        
         const isScheduled = isCountdown == 1 && liveDate;
         const isLocked = isScheduled ? this.isProductLocked(liveDate) : false;
        
@@ -898,7 +1130,9 @@ const ASMRDHIA_APP = {
         } else {
              if (this.intervals.preview) clearInterval(this.intervals.preview);
         }
+        
         document.getElementById('preview-modal')?.classList.add('active');
     }
 };
+
 window.addEventListener('load', () => ASMRDHIA_APP.init());
