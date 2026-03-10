@@ -23,6 +23,33 @@ const SHOP = {
         appliedPoints: { email: null, points: 0, amount: 0 },
         reviewOrder: null, reviewName: null, reviewItemsData: []
     },
+
+    // --- KOD BARU DITAMBAH DI SINI ---
+    trackView: async function(productId) {
+        if (!productId) return;
+        fetch(`${WORKER_URL}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'track_product_view',
+                product_id: productId
+            })
+        }).catch(err => console.debug('[view track] gagal:', err));
+    },
+
+    trackClick: async function(productId, type = 'add_to_cart') {
+        if (!productId) return;
+        fetch(`${WORKER_URL}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: 'track_product_click',
+                product_id: productId,
+                click_type: type
+            })
+        }).catch(err => console.debug('[click track] gagal:', err));
+    },
+    // --- TAMAT KOD BARU ---
     
     showToast(title, icon = 'success') {
         Swal.fire({ toast: true, position: 'top', icon: icon, title: title, showConfirmButton: false, timer: 2000, background: '#1e2329', color: '#fff' });
@@ -215,7 +242,7 @@ const SHOP = {
                 </div>`;
             }
             
-            let actionBtn = `<button onclick="event.stopPropagation(); SHOP.quickAdd('${p.id}')" class="absolute bottom-3 right-3 w-8 h-8 bg-emerald-500 hover:bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 transition-transform active:scale-95 z-40 btn-active" aria-label="Quick Add"><i class="ri-add-line text-lg"></i></button>`;
+            let actionBtn = `<button onclick="event.stopPropagation(); SHOP.quickAdd('${p.id}'); SHOP.trackClick('${p.id}', 'quick_add')" class="absolute bottom-3 right-3 w-8 h-8 bg-emerald-500 hover:bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg shadow-emerald-500/30 transition-transform active:scale-95 z-40 btn-active" aria-label="Quick Add"><i class="ri-add-line text-lg"></i></button>`;
             if (isLocked) actionBtn = ''; 
             if (actualStock <= 0) actionBtn = `<div class="absolute bottom-3 right-3 w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center text-gray-400 z-40"><i class="ri-forbid-line text-lg"></i></div>`;
                 
@@ -325,6 +352,8 @@ const SHOP = {
     },
 
     viewProduct(id) {
+        SHOP.trackView(id); 
+        
         const p = this.state.products.find(x=>x.id==id);
         if(!p) return;
         const c = this.parseConfig(p.description);
@@ -468,6 +497,11 @@ const SHOP = {
                      this.showToast('Max stock limit reached', 'error');
                      return;
                 }
+
+                // --- KOD BARU DITAMBAH DI SINI ---
+                const clickType = variations.length > 0 ? 'detail_add_with_var' : 'detail_add';
+                SHOP.trackClick(p.id, clickType);
+                // --- TAMAT KOD BARU ---
                 
                 this.addToCart(p.id, this.state.currentSelection, c.discount); 
                 this.closeModal(); 
