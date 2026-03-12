@@ -81,122 +81,9 @@ const ASMRDHIA_APP = {
             this.populatePointSettings();
             this.startGlobalCountdowns();
             
-            // Setup view tracking after products are rendered
-            setTimeout(() => {
-                this.setupIntersectionObserver();
-            }, 500);
-            
         } catch (e) {
             Swal.fire('Ralat', 'Gagal memuatkan data dari server', 'error');
         }
-    },
-    
-    // ========== VIEW TRACKING ==========
-    async trackView(productId) {
-        // Prevent multiple simultaneous tracking
-        if (this._trackingView && this._trackingView[productId]) {
-            return;
-        }
-        
-        if (!this._trackingView) this._trackingView = {};
-        this._trackingView[productId] = true;
-        
-        try {
-            await this.request('POST', {
-                action: 'track_view',
-                product_id: productId
-            });
-            
-            // UPDATE TERUS tanpa render semula
-            const product = this.state.products.find(p => p.id == productId);
-            if (product) {
-                product.views = (product.views || 0) + 1;
-                
-                // UPDATE COUNTER TERUS dalam DOM
-                const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
-                if (productCard) {
-                    const viewSpan = productCard.querySelector('.ri-eye-line').parentElement;
-                    if (viewSpan) {
-                        viewSpan.innerHTML = `<i class="ri-eye-line"></i> ${product.views} views`;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Error tracking view:', e);
-        } finally {
-            // Release lock after 2 seconds
-            setTimeout(() => {
-                delete this._trackingView[productId];
-            }, 2000);
-        }
-    },
-    
-    // ========== CLICK TRACKING ==========
-    async trackClick(productId) {
-        try {
-            await this.request('POST', {
-                action: 'track_click',
-                product_id: productId
-            });
-            
-            const product = this.state.products.find(p => p.id == productId);
-            if (product) {
-                product.clicks = (product.clicks || 0) + 1;
-                
-                // UPDATE TERUS dalam DOM
-                const productCard = document.querySelector(`.product-card[data-product-id="${productId}"]`);
-                if (productCard) {
-                    const clickSpan = productCard.querySelector('.ri-mouse-line').parentElement;
-                    if (clickSpan) {
-                        clickSpan.innerHTML = `<i class="ri-mouse-line"></i> ${product.clicks} clicks`;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('Error tracking click:', e);
-        }
-    },
-    
-    // ========== INTERSECTION OBSERVER FOR VIEWS ==========
-    setupIntersectionObserver() {
-        // Remove existing observer if any
-        if (this.observer) {
-            this.observer.disconnect();
-        }
-        
-        // Track viewed products to prevent double counting
-        if (!this.viewedProducts) {
-            this.viewedProducts = new Set();
-        }
-        
-        this.observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const productCard = entry.target.closest('.product-card');
-                    if (productCard) {
-                        const productId = productCard.dataset.productId;
-                        
-                        // Only track if not viewed before
-                        if (productId && !this.viewedProducts.has(productId)) {
-                            this.viewedProducts.add(productId);
-                            this.trackView(productId);
-                        }
-                    }
-                    this.observer.unobserve(entry.target);
-                }
-            });
-        }, { 
-            threshold: 0.3,
-            rootMargin: '0px' 
-        });
-
-        // Observe all product cards
-        setTimeout(() => {
-            const images = document.querySelectorAll('.product-card .card-img');
-            images.forEach(img => {
-                this.observer.observe(img);
-            });
-        }, 100);
     },
     
     // ========== POINT SETTINGS ==========
@@ -250,9 +137,9 @@ const ASMRDHIA_APP = {
     updateCountdownDisplay(elementId, targetDate) {
         const element = document.getElementById(elementId);
         if (!element) return false;
-       
+        
         const diff = new Date(targetDate) - new Date();
-       
+        
         if (diff <= 0) {
             element.innerHTML = '<div class="text-xs font-bold text-emerald-400 bg-black/50 px-3 py-1.5 rounded-lg border border-emerald-500/30">TELAH DIBUKA!</div>';
             const overlay = element.closest('.lock-overlay-container');
@@ -261,12 +148,12 @@ const ASMRDHIA_APP = {
             }
             return false;
         }
-       
+        
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         const seconds = Math.floor((diff % (1000 * 60)) / 1000);
-       
+        
         element.innerHTML = `
             <div class="countdown-segment"><span class="countdown-value">${days.toString().padStart(2, '0')}</span><span class="countdown-label">Hari</span></div>
             <div class="countdown-segment"><span class="countdown-value">${hours.toString().padStart(2, '0')}</span><span class="countdown-label">Jam</span></div>
@@ -313,7 +200,7 @@ const ASMRDHIA_APP = {
     renderCoupons() {
         const list = document.getElementById('coupon-list');
         if (!list) return;
-       
+        
         document.getElementById('coupon-count').innerText = this.state.coupons.length;
         list.innerHTML = '';
         
@@ -371,7 +258,7 @@ const ASMRDHIA_APP = {
         const limit = limitStr ? parseInt(limitStr) : 0;
         btn.disabled = true;
         btn.innerHTML = '<i class="ri-loader-4-line animate-spin"></i>';
-       
+        
         try {
             const res = await this.request('POST', { 
                 action: 'add_coupon', 
@@ -394,7 +281,7 @@ const ASMRDHIA_APP = {
                 document.getElementById('new_coupon_code').value = '';
                 document.getElementById('new_coupon_val').value = '';
                 document.getElementById('new_coupon_limit').value = '';
-               
+                
                 const newC = await this.request('GET', null, 'get_coupons');
                 this.state.coupons = newC.coupons || [];
                 this.renderCoupons();
@@ -417,7 +304,7 @@ const ASMRDHIA_APP = {
             confirmButtonText: 'Ya',
             confirmButtonColor: '#ef4444'
         });
-       
+        
         if (res.isConfirmed) {
             Swal.fire({ 
                 title: 'Memadam...', 
@@ -449,11 +336,6 @@ const ASMRDHIA_APP = {
         grid.innerHTML = '';
         const list = data || this.state.products;
         
-        // Reset viewed products untuk search/filter
-        if (this.viewedProducts) {
-            this.viewedProducts.clear();
-        }
-        
         if (list.length === 0) {
             grid.innerHTML = `<div class="col-span-full py-16 text-center bg-white rounded-2xl border border-gray-100 shadow-sm"><i class="ri-plant-line text-4xl text-gray-300 block mb-2"></i><p class="text-gray-500 font-medium">Tiada produk dijumpai.</p></div>`;
             document.getElementById('prod-count').innerText = 0;
@@ -465,14 +347,14 @@ const ASMRDHIA_APP = {
             const vars = this.safeJSONParse(p.variations);
             let actualStock = meta.stock;
             if (vars.length > 0) actualStock = vars.reduce((acc, v) => acc + (parseInt(v.stock) || 0), 0);
-           
+            
             const price = parseFloat(p.price) || 0;
             const discount = meta.discount;
-           
+            
             const mediaArr = this.parseMedia(p.image);
             let rawImgUrl = mediaArr.length > 0 ? mediaArr[0] : '';
             const img = rawImgUrl ? (this.getYoutubeThumbnail(rawImgUrl) || rawImgUrl) : 'https://placehold.co/400?text=No+Img';
-           
+            
             const isScheduled = meta.isCountdown == 1 && meta.liveDate;
             const isLocked = isScheduled ? this.isProductLocked(meta.liveDate) : false;
             
@@ -481,7 +363,7 @@ const ASMRDHIA_APP = {
             if (actualStock <= 0 && meta.isActive === 1) badgesHTML += `<span class="badge badge-red">HABIS STOK</span>`;
             if (discount > 0 && discount < price) badgesHTML += `<span class="badge badge-orange">-${Math.round(((price-discount)/price)*100)}%</span>`;
             if (p.is_free_shipping === 1) badgesHTML += `<span class="badge badge-green"><i class="ri-truck-fill"></i> FREE POS</span>`;
-           
+            
             let priceHTML = `<div class="font-bold text-gray-900 text-lg">RM ${price.toFixed(2)}</div>`;
             if (discount > 0 && discount < price) {
                 priceHTML = `<div class="text-xs text-gray-400 line-through">RM ${price.toFixed(2)}</div><div class="font-bold text-emerald-600 text-lg">RM ${discount.toFixed(2)}</div>`;
@@ -498,11 +380,10 @@ const ASMRDHIA_APP = {
                 </div>`;
             }
             
-            // MAIN PRODUCT CARD WITH CLICK TRACKING
+            // MAIN PRODUCT CARD TANPA CLICK TRACKING
             grid.innerHTML += `
                 <div class="product-card group ${meta.isActive === 0 ? 'opacity-70 grayscale-[30%]' : ''}" 
-                     data-product-id="${p.id}"
-                     onclick="ASMRDHIA_APP.trackClick('${p.id}')">
+                     data-product-id="${p.id}">
                     <div class="card-img-container">
                         <img src="${img}" class="card-img" loading="lazy">
                         ${this.getYoutubeThumbnail(rawImgUrl) ? '<div class="absolute inset-0 flex items-center justify-center text-white/80 pointer-events-none"><i class="ri-play-circle-fill text-5xl drop-shadow-md"></i></div>' : ''}
@@ -518,7 +399,6 @@ const ASMRDHIA_APP = {
                             <h3 class="font-bold text-gray-900 text-[15px] leading-tight mb-1 line-clamp-2" title="${p.name}">${p.name}</h3>
                         </div>
                         
-                        <!-- VIEWS & CLICKS COUNTER -->
                         <div class="flex gap-4 mt-2 text-xs">
                             <span class="flex items-center gap-1 text-emerald-600 font-medium">
                                 <i class="ri-eye-line"></i> ${p.views || 0} views
@@ -541,11 +421,6 @@ const ASMRDHIA_APP = {
         
         document.getElementById('prod-count').innerText = list.length;
         this.updateTableCountdowns();
-        
-        // Setup observer for new products
-        setTimeout(() => {
-            this.setupIntersectionObserver();
-        }, 500);
     },
     
     searchProduct(val) {
@@ -587,7 +462,7 @@ const ASMRDHIA_APP = {
     closePreviewModal() {
         document.getElementById('preview-modal').classList.remove('active');
         if (this.intervals.preview) clearInterval(this.intervals.preview);
-       
+        
         const gallery = document.getElementById('prev-image-gallery');
         if (gallery) gallery.innerHTML = '';
     },
@@ -597,30 +472,30 @@ const ASMRDHIA_APP = {
             const el = document.getElementById(id);
             if(el) el.value = '';
         });
-       
+        
         const prodStock = document.getElementById('prod-stock');
         if(prodStock) prodStock.value = 0;
-       
+        
         const prodStatus = document.getElementById('prod-status');
         if(prodStatus) prodStatus.value = 1;
-       
+        
         const prodFreeShip = document.getElementById('prod-free-ship');
         if(prodFreeShip) prodFreeShip.checked = false;
-       
+        
         const prodIsCountdown = document.getElementById('prod-is-countdown');
         if(prodIsCountdown) prodIsCountdown.checked = false;
-       
+        
         this.toggleCountdown(false);
-       
+        
         const variationList = document.getElementById('variation-list');
         if(variationList) variationList.innerHTML = '';
-       
+        
         const mainMediaList = document.getElementById('main-media-list');
         if(mainMediaList) {
             mainMediaList.innerHTML = '';
             this.addMainMedia();
         }
-       
+        
         this.updateFormPreview();
         this.calcTotalStock();
     },
@@ -629,7 +504,7 @@ const ASMRDHIA_APP = {
         const list = document.getElementById('main-media-list');
         if (!list) return;
         if (list.children.length >= 8) return Swal.fire('Had Maksimum', 'Hanya 8 media dibenarkan', 'warning');
-       
+        
         const div = document.createElement('div');
         div.className = "flex gap-2 items-center slide-in";
         div.innerHTML = `
@@ -643,13 +518,13 @@ const ASMRDHIA_APP = {
     updateFormPreview() {
         const grid = document.getElementById('media-preview-grid');
         if (!grid) return;
-       
+        
         grid.innerHTML = '';
         const inputs = document.querySelectorAll('.main-media-input');
-       
+        
         let hasValid = false;
         let count = 0;
-       
+        
         inputs.forEach((inp) => {
             const url = inp.value.trim();
             if(url.length > 5) {
@@ -661,7 +536,7 @@ const ASMRDHIA_APP = {
                 count++;
             }
         });
-       
+        
         if(!hasValid) {
             grid.innerHTML = `<div class="col-span-4 py-8 bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl flex flex-col items-center justify-center text-gray-400 text-xs font-medium"><i class="ri-image-add-line text-3xl mb-2"></i> Pratonton Media</div>`;
         } else {
@@ -682,18 +557,18 @@ const ASMRDHIA_APP = {
     calcTotalStock() {
         let total = 0;
         const rows = document.querySelectorAll('#variation-list .var-row');
-       
+        
         const singleStockContainer = document.getElementById('single-stock-container');
         const noVarMsg = document.getElementById('no-var-msg');
         const stockBadge = document.getElementById('stock-auto-badge');
         const displayInput = document.getElementById('prod-stock-display');
-       
+        
         if(rows.length > 0) {
             rows.forEach(r => {
                 const stockInput = r.querySelector('.var-stock');
                 if(stockInput) total += (parseInt(stockInput.value)||0);
             });
-           
+            
             if(singleStockContainer) singleStockContainer.style.display = 'none';
             if(noVarMsg) noVarMsg.style.display = 'none';
             if(stockBadge) {
@@ -703,7 +578,7 @@ const ASMRDHIA_APP = {
         } else {
             const stockInput = document.getElementById('prod-stock');
             if(stockInput) total = parseInt(stockInput.value)||0;
-           
+            
             if(singleStockContainer) singleStockContainer.style.display = 'block';
             if(noVarMsg) noVarMsg.style.display = 'block';
             if(stockBadge) {
@@ -711,17 +586,17 @@ const ASMRDHIA_APP = {
                 stockBadge.className = "bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded font-bold";
             }
         }
-       
+        
         if(displayInput) displayInput.value = total;
     },
     
     addVarRow(l='', p='', s='', w='', mediaArr=[]) {
         const container = document.getElementById('variation-list');
         if (!container) return;
-       
+        
         const div = document.createElement('div');
         div.className = "var-row bg-white border border-gray-200 p-4 rounded-xl mb-4 relative group hover:border-emerald-300 transition-colors shadow-sm";
-       
+        
         let mediaHtml = '';
         if(!mediaArr || mediaArr.length === 0) mediaArr = [''];
         mediaArr.forEach(url => {
@@ -753,7 +628,7 @@ const ASMRDHIA_APP = {
         const container = btn.closest('.var-row')?.querySelector('.var-media-container');
         if(!container) return;
         if(container.children.length >= 8) return Swal.fire('Had Maksimum', 'Maksimum 8 gambar untuk setiap variasi.', 'warning');
-       
+        
         const div = document.createElement('div');
         div.className = "flex gap-2 items-center";
         div.innerHTML = `<input type="text" class="var-media-input clean-input !py-1.5 !px-2 text-xs" placeholder="URL Gambar Khas"><button type="button" onclick="this.parentElement.remove()" class="w-8 h-8 shrink-0 bg-red-50 text-red-500 hover:bg-red-100 rounded-lg transition"><i class="ri-close-line"></i></button>`;
@@ -763,11 +638,11 @@ const ASMRDHIA_APP = {
     toggleCountdown(show) {
         const countdownBox = document.getElementById('countdown-box');
         const countdownPreview = document.getElementById('countdown-preview');
-       
+        
         if(countdownBox) countdownBox.style.display = show ? 'block' : 'none';
         if(countdownPreview) countdownPreview.style.display = show ? 'block' : 'none';
     },
-   
+    
     validateScheduleDate() {
         const date = document.getElementById('prod-live-date')?.value;
         if(date) {
@@ -783,7 +658,7 @@ const ASMRDHIA_APP = {
         const p = this.state.products.find(x => x.id == id);
         if (!p) return;
         const meta = this.parseData(p.description);
-       
+        
         document.getElementById('prod-id').value = p.id;
         document.getElementById('prod-name').value = p.name;
         document.getElementById('prod-price').value = p.price;
@@ -794,7 +669,7 @@ const ASMRDHIA_APP = {
         document.getElementById('prod-stock').value = meta.stock;
         document.getElementById('prod-status').value = meta.isActive;
         document.getElementById('prod-free-ship').checked = (p.is_free_shipping === 1);
-       
+        
         document.getElementById('main-media-list').innerHTML = '';
         const mediaArr = this.parseMedia(p.image);
         if(mediaArr.length > 0) {
@@ -802,7 +677,7 @@ const ASMRDHIA_APP = {
         } else {
             this.addMainMedia();
         }
-       
+        
         document.getElementById('variation-list').innerHTML = '';
         const vars = this.safeJSONParse(p.variations);
         if(vars.length > 0) {
@@ -830,7 +705,7 @@ const ASMRDHIA_APP = {
     async saveProduct() {
         const btn = document.getElementById('btn-save');
         const ogText = btn.innerHTML;
-       
+        
         const name = document.getElementById('prod-name').value;
         const price = document.getElementById('prod-price').value;
         if (!name || !price) return Swal.fire('Ralat', 'Nama & Harga wajib diisi', 'warning');
@@ -850,7 +725,7 @@ const ASMRDHIA_APP = {
             const vPrice = parseFloat(row.querySelector('.var-price')?.value) || 0;
             const vStock = parseInt(row.querySelector('.var-stock')?.value) || 0;
             const vWeight = parseFloat(row.querySelector('.var-weight')?.value) || 0;
-           
+            
             let varMedia = [];
             row.querySelectorAll('.var-media-input').forEach(inp => {
                 if(inp.value.trim()) varMedia.push(inp.value.trim());
@@ -882,7 +757,7 @@ const ASMRDHIA_APP = {
             c: isC,
             t: (isC && lDate) ? lDate : ''
         };
-       
+        
         const desc = `[CONFIG:${JSON.stringify(configObj)}][/CONFIG] ${cleanDesc || ''}`;
         
         const data = {
@@ -912,7 +787,7 @@ const ASMRDHIA_APP = {
                     showConfirmButton: false
                 });
                 this.closeModal();
-               
+                
                 const [resProd, resCoup] = await Promise.all([
                     this.request('GET'),
                     this.request('GET', null, 'get_coupons')
@@ -920,7 +795,7 @@ const ASMRDHIA_APP = {
                 
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
-               
+                
                 this.renderProductGrid();
                 this.renderCoupons();
                 this.populateProductDropdown();
@@ -942,7 +817,7 @@ const ASMRDHIA_APP = {
             confirmButtonColor: '#ef4444',
             confirmButtonText: 'Ya, Padam'
         });
-       
+        
         if(res.isConfirmed) {
             try {
                 await this.request('POST', {
@@ -952,7 +827,7 @@ const ASMRDHIA_APP = {
                 
                 Swal.fire('Dipadam', 'Produk berjaya dipadam', 'success');
                 this.closeModal();
-               
+                
                 const [resProd, resCoup] = await Promise.all([
                     this.request('GET'),
                     this.request('GET', null, 'get_coupons')
@@ -960,7 +835,7 @@ const ASMRDHIA_APP = {
                 
                 this.state.products = resProd.menus || [];
                 this.state.coupons = resCoup.coupons || [];
-               
+                
                 this.renderProductGrid();
                 this.renderCoupons();
                 this.populateProductDropdown();
@@ -1006,7 +881,7 @@ const ASMRDHIA_APP = {
             isCountdown = document.getElementById('prod-is-countdown')?.checked ? 1 : 0;
             liveDate = document.getElementById('prod-live-date')?.value;
             isFreeShip = document.getElementById('prod-free-ship')?.checked ? 1 : 0;
-           
+            
             document.querySelectorAll('#variation-list .var-row').forEach(row => {
                 const vName = row.querySelector('.var-name')?.value;
                 const vStock = row.querySelector('.var-stock')?.value;
@@ -1020,17 +895,17 @@ const ASMRDHIA_APP = {
         
         const gallery = document.getElementById('prev-image-gallery');
         const scrollNav = document.getElementById('prev-scroll-nav');
-       
+        
         const renderGallery = (mArr) => {
             if(gallery) {
                 gallery.innerHTML = '';
                 if(mArr.length === 0 || (mArr.length === 1 && mArr[0] === '')) mArr = ['https://placehold.co/400x400?text=No+Media'];
-               
+                
                 mArr.forEach((url, idx) => {
                     const isYt = this.getYoutubeThumbnail(url);
                     const embedUrl = isYt ? this.getEmbedUrl(url) : null;
                     const thumb = isYt || url;
-                   
+                    
                     if (isYt) {
                         gallery.innerHTML += `
                         <div class="w-full h-full shrink-0 snap-item relative bg-black flex items-center justify-center" id="prev-slide-${idx}">
@@ -1042,7 +917,7 @@ const ASMRDHIA_APP = {
                     }
                 });
             }
-           
+            
             if(scrollNav) {
                 scrollNav.style.display = mArr.length > 1 ? 'block' : 'none';
             }
@@ -1089,18 +964,18 @@ const ASMRDHIA_APP = {
         const varCont = document.getElementById('prev-var-container');
         const varList = document.getElementById('prev-var-list');
         if(varList) varList.innerHTML = '';
-       
+        
         if (variations.length > 0 && varCont && varList) {
             varCont.classList.remove('hidden');
             variations.forEach(v => {
                 const btn = document.createElement('button');
                 btn.className = 'px-3 py-1.5 border border-gray-200 bg-white rounded-lg text-xs font-semibold text-gray-600 hover:border-emerald-500 hover:text-emerald-600 transition shadow-sm';
                 btn.innerText = `${v.label} (${v.stock})`;
-               
+                
                 btn.onclick = () => {
                     Array.from(varList.children).forEach(b=>b.classList.remove('bg-emerald-50', 'border-emerald-500', 'text-emerald-600'));
                     btn.classList.add('bg-emerald-50', 'border-emerald-500', 'text-emerald-600');
-                   
+                    
                     const vMediaArr = this.parseMedia(v.image);
                     if(vMediaArr.length > 0 && vMediaArr[0] !== '') {
                         renderGallery(vMediaArr);
@@ -1109,7 +984,7 @@ const ASMRDHIA_APP = {
                         priceCont.innerHTML = `<span class="text-2xl font-bold text-emerald-600">RM${parseFloat(v.price).toFixed(2)}</span>`;
                         if(promoBadge) promoBadge.style.display = 'none';
                     }
-                   
+                    
                     if(stockBadge && isActive !== 0) {
                         if (v.stock <= 0) {
                             stockBadge.innerText = "HABIS STOK";
@@ -1128,12 +1003,12 @@ const ASMRDHIA_APP = {
         
         const isScheduled = isCountdown == 1 && liveDate;
         const isLocked = isScheduled ? this.isProductLocked(liveDate) : false;
-       
+        
         const lockOverlay = document.getElementById('prev-lock-overlay');
         if(lockOverlay) {
             lockOverlay.style.display = isLocked ? 'flex' : 'none';
         }
-       
+        
         if (isLocked) {
             this.updateCountdownDisplay('prev-countdown', liveDate);
             if (this.intervals.preview) clearInterval(this.intervals.preview);
