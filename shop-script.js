@@ -1112,7 +1112,7 @@ const SHOP = {
             }
 
             this.state.activeCoupon = coupon;
-            el.innerHTML = '<i class="ri-check-line"></i> Promo Applied!'; 
+            el.innerHTML = '<i class="ri-check-line"></i> Kupon Digunakan!'; 
             el.classList.add('text-emerald-500');
             
             input.disabled = true;
