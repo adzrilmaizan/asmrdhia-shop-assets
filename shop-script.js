@@ -1121,7 +1121,7 @@ const SHOP = {
             this.showToast('Coupon Applied!');
         } else {
             this.state.activeCoupon = null;
-            el.innerHTML = '<i class="ri-close-line"></i> Invalid Promo Code'; 
+            el.innerHTML = '<i class="ri-close-line"></i> Kupon Tak Sah!'; 
             el.classList.add('text-red-500');
         }
         this.updateCartUI();
