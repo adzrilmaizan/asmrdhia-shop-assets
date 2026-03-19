@@ -1129,15 +1129,69 @@ const SHOP = {
 
     checkPaymentStatus() {
         const p = new URLSearchParams(window.location.search);
+        
+        // ToyyibPay menghantar status_id=1 (Berjaya) dan order_id
         if(p.get('status_id') === '1') { 
+            const orderId = p.get('order_id') || p.get('refno') || 'N/A';
+            const transactionId = p.get('transaction_id') || 'N/A';
+            
+            // Selamatkan data troli sebelum ia dipadam
+            const savedCart = localStorage.getItem('asmr_cart');
+            let itemsHtml = '';
+            let isDigitalOnly = false;
+            
+            if (savedCart) {
+                try {
+                    const cartData = JSON.parse(savedCart);
+                    if (cartData && cartData.length > 0) {
+                        itemsHtml = '<div class="text-left mt-4 mb-2"><strong class="text-xs text-gray-400 uppercase tracking-wider">Ringkasan Pesanan:</strong><ul class="mt-2 space-y-2">';
+                        cartData.forEach(item => {
+                            itemsHtml += `<li class="text-sm text-gray-200 flex justify-between border-b border-gray-700/50 pb-2"><span class="truncate pr-2">${item.name} <span class="text-emerald-400 text-xs ml-1">x${item.qty}</span></span></li>`;
+                        });
+                        itemsHtml += '</ul></div>';
+                        
+                        // Periksa kalau ada barang fizikal dalam troli
+                        // (Untuk tentukan mesej akhir pop-up)
+                        const hasPhysical = cartData.some(item => {
+                             const prod = this.state.products.find(x => x.id == item.id);
+                             return prod && prod.is_digital !== 1;
+                        });
+                        isDigitalOnly = !hasPhysical;
+                    }
+                } catch(e) {}
+            }
+
+            // Mesej tambahan berdasarkan jenis barang
+            let extraMessage = isDigitalOnly 
+                ? '<div class="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-300"><i class="ri-mail-send-line"></i> Sila semak emel atau notifikasi untuk dapatkan link akses produk digital anda sebentar lagi.</div>'
+                : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
+
+            // Padam parameter dari URL supaya tak berulang
             window.history.replaceState({},'',window.location.pathname); 
+            
+            // Paparkan Resit Cantik
             Swal.fire({
                 icon: 'success',
-                title: 'Payment Successful!',
-                text: 'Thank you for your purchase.',
+                title: 'Bayaran Berjaya!',
+                html: `
+                    <div class="text-sm text-gray-300 mb-2">Terima kasih atas pembelian anda.</div>
+                    <div class="bg-[#2a3038] p-4 rounded-xl text-left border border-white/5 shadow-inner">
+                        <div class="flex justify-between mb-1"><span class="text-gray-400 text-xs">No. Pesanan:</span> <span class="text-white font-mono text-xs">#${orderId.slice(-6)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400 text-xs">No. Transaksi (Bank):</span> <span class="text-white font-mono text-xs">${transactionId}</span></div>
+                        ${itemsHtml}
+                    </div>
+                    ${extraMessage}
+                `,
+                confirmButtonText: 'Tutup Resit',
                 confirmButtonColor: '#10b981',
-                background: '#1e2329', color: '#fff'
+                background: '#1e2329', 
+                color: '#fff',
+                customClass: {
+                    htmlContainer: 'text-left' // Memastikan teks di dalam alert rata kiri
+                }
             }); 
+            
+            // Kosongkan troli
             localStorage.removeItem('asmr_cart'); 
             this.state.cart = []; 
             this.updateCartUI(); 
