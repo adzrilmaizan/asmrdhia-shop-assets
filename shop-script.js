@@ -1296,4 +1296,4 @@ const SHOP = {
         printWindow.document.close();
     }
  };
-window.onload = () => SHOP.init();
+document.addEventListener('DOMContentLoaded', () => SHOP.init());
