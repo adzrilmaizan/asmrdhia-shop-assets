@@ -1295,4 +1295,5 @@ const SHOP = {
         printWindow.document.write(html);
         printWindow.document.close();
     }
+ };
 window.onload = () => SHOP.init();
