@@ -574,7 +574,7 @@ const SHOP = {
         else this.state.cart.push({ cartId, id, name, price, img: p.image, weight, qty: qtyToAdd });
         
         this.saveCart(); 
-        this.showToast('Added to cart!');
+        this.showToast('Telah masuk ke bakul!');
     },
     
     saveCart() { localStorage.setItem('asmr_cart', JSON.stringify(this.state.cart)); this.updateCartUI(); },
