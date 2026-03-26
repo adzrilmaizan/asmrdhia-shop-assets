@@ -826,7 +826,7 @@ const SHOP = {
             shipEl.innerHTML = `<span class="bg-purple-500 text-white px-2 py-0.5 rounded text-xs"><i class="ri-file-download-fill"></i> DIGITAL</span>`; 
             shipEl.className = "font-bold text-purple-400";
         } else if(ship === 0 && !document.getElementById('ship-state').value) {
-            shipEl.innerText = "Select State"; 
+            shipEl.innerText = "Pilih Negeri"; 
             shipEl.className = "font-bold text-amber-400 animate-pulse";
         } else if (hasFreeShipping) {
             shipEl.innerHTML = `<span class="bg-emerald-500 text-white px-2 py-0.5 rounded text-xs"><i class="ri-truck-fill"></i> FREE POS</span>`; 
