@@ -531,7 +531,7 @@ const SHOP = {
                 });
                 listDiv.innerHTML = html;
             } else {
-                listDiv.innerHTML = `<div class="bg-[var(--bg-input)] p-6 rounded-2xl text-center"><i class="ri-chat-smile-2-line text-3xl text-gray-600 block mb-2"></i><div class="text-sm font-bold text-gray-400">No reviews yet</div><p class="text-xs text-gray-500 mt-1">Be the first to review this product.</p></div>`;
+                listDiv.innerHTML = `<div class="bg-[var(--bg-input)] p-6 rounded-2xl text-center"><i class="ri-chat-smile-2-line text-3xl text-gray-600 block mb-2"></i><div class="text-sm font-bold text-gray-400">Belum ada review</div><p class="text-xs text-gray-500 mt-1">Jadi yang pertama untuk buat review.</p></div>`;
             }
         } catch(e) { listDiv.innerHTML = '<div class="text-center text-red-400 text-xs py-4">Failed to load reviews.</div>'; }
     },
