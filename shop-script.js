@@ -616,8 +616,8 @@ const SHOP = {
         if(this.state.cart.length === 0) {
             list.innerHTML = `<div class="empty-state">
                 <i class="ri-shopping-cart-line text-5xl text-gray-600 mb-3"></i>
-                <div class="text-white font-bold text-lg">Cart is empty</div>
-                <div class="text-gray-500 text-xs mt-1">Looks like you haven't added anything yet.</div>
+                <div class="text-white font-bold text-lg">Bakul masih kosong</div>
+                <div class="text-gray-500 text-xs mt-1">Anda belum masukkan apa-apa produk lagi</div>
             </div>`;
             if (btnCheckout) btnCheckout.disabled = true;
             
