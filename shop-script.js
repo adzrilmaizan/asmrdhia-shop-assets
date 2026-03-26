@@ -485,7 +485,7 @@ const SHOP = {
             btn.className = "flex-1 bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition flex items-center justify-center gap-2 btn-active";
             btn.onclick = () => { 
                 if(variations.length > 0 && !this.state.currentSelection) { 
-                    Swal.fire({title: 'Select Variation', text: 'Please select an option first.', icon: 'warning', background: '#1e2329', color: '#fff'}); return; 
+                    Swal.fire({title: 'Pilih Variasi', text: 'Pilih Variasi dahulu.', icon: 'warning', background: '#1e2329', color: '#fff'}); return; 
                 } 
                 
                 const selectedStock = this.state.currentSelection ? parseInt(this.state.currentSelection.stock) : maxStock;
