@@ -215,7 +215,7 @@ const SHOP = {
             const img = rawImgUrl ? (this.getYoutubeThumbnail(rawImgUrl) || rawImgUrl) : 'https://placehold.co/400?text=No+Img';
             
             let badgeHTML = '';
-            if (actualStock <= 0) badgeHTML = '<span class="absolute top-3 left-3 badge-red shadow-sm z-20">OUT OF STOCK</span>';
+            if (actualStock <= 0) badgeHTML = '<span class="absolute top-3 left-3 badge-red shadow-sm z-20">TIADA STOK</span>';
             else if (conf.discount > 0) badgeHTML = `<span class="absolute top-3 left-3 badge-green shadow-sm z-20">-${Math.round(((price-conf.discount)/price)*100)}%</span>`;
             else if (p.is_free_shipping === 1 || p.is_digital === 1) badgeHTML = `<span class="absolute top-3 left-3 bg-blue-500 text-white px-2 py-1 rounded-md text-[9px] font-bold shadow-sm z-20"><i class="ri-truck-fill"></i> FREE POS</span>`;
             
@@ -477,7 +477,7 @@ const SHOP = {
         const btn = document.getElementById('dm-add-btn');
         if(maxStock <= 0) { 
             btn.disabled = true; 
-            document.getElementById('dm-add-text').innerText = "OUT OF STOCK";
+            document.getElementById('dm-add-text').innerText = "TIADA STOK";
             btn.className = "flex-1 bg-[var(--bg-input)] text-gray-500 py-3.5 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2"; 
         } else { 
             btn.disabled = false; 
