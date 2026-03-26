@@ -481,7 +481,7 @@ const SHOP = {
             btn.className = "flex-1 bg-[var(--bg-input)] text-gray-500 py-3.5 rounded-xl font-bold cursor-not-allowed flex items-center justify-center gap-2"; 
         } else { 
             btn.disabled = false; 
-            document.getElementById('dm-add-text').innerText = "ADD TO CART";
+            document.getElementById('dm-add-text').innerText = "MASUKKAN KE BAKUL";
             btn.className = "flex-1 bg-emerald-500 text-white py-3.5 rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition flex items-center justify-center gap-2 btn-active";
             btn.onclick = () => { 
                 if(variations.length > 0 && !this.state.currentSelection) { 
