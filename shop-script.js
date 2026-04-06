@@ -1082,11 +1082,10 @@ const SHOP = {
         };
         
         try {
-            const res = await fetch(WORKER_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r=>r.json());
-            if(res.status==='success' && res.payment_url) { 
-                localStorage.removeItem('asmr_cart'); 
-                window.location.href = res.payment_url; 
-            } else { 
+            const res = await fetch(WORKER_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r=>r.json());
+            if(res.status==='success' && res.payment_url) { 
+                window.location.href = res.payment_url; 
+            } else {
                 Swal.fire({title:'Transaksi Ditolak', text:res.msg || 'Sistem menolak permintaan anda.', icon:'error', background: '#1e2329', color: '#fff'}); 
                 btn.disabled = false; btn.innerHTML = ogText; 
             }
@@ -1146,172 +1145,171 @@ const SHOP = {
     },
 
     checkPaymentStatus() {
-        const p = new URLSearchParams(window.location.search);
-        
-        if(p.get('status_id') === '1') { 
-            const orderId = p.get('order_id') || p.get('refno') || 'N/A';
-            const transactionId = p.get('transaction_id') || 'N/A';
-            
-            // Selamatkan data troli untuk kegunaan resit
-            const savedCart = localStorage.getItem('asmr_cart');
-            let cartData = [];
-            let itemsHtml = '';
-            let isDigitalOnly = false;
-            
-            if (savedCart) {
-                try {
-                    cartData = JSON.parse(savedCart);
-                    if (cartData && cartData.length > 0) {
-                        itemsHtml = '<div class="text-left mt-4 mb-2"><strong class="text-xs text-gray-400 uppercase tracking-wider">Ringkasan Pesanan:</strong><ul class="mt-2 space-y-2">';
-                        cartData.forEach(item => {
-                            itemsHtml += `<li class="text-sm text-gray-200 flex justify-between border-b border-gray-700/50 pb-2"><span class="truncate pr-2">${item.name} <span class="text-emerald-400 text-xs ml-1">x${item.qty}</span></span></li>`;
-                        });
-                        itemsHtml += '</ul></div>';
-                        
-                        const hasPhysical = cartData.some(item => {
-                             const prod = this.state.products.find(x => x.id == item.id);
-                             return prod && prod.is_digital !== 1;
-                        });
-                        isDigitalOnly = !hasPhysical;
-                    }
-                } catch(e) {}
-            }
+        const p = new URLSearchParams(window.location.search);
+        
+        if(p.get('status_id') === '1') { 
+            const orderId = p.get('order_id') || p.get('refno') || 'N/A';
+            const transactionId = p.get('transaction_id') || 'N/A';
+            
+            // Selamatkan data troli untuk kegunaan resit
+            const savedCart = localStorage.getItem('asmr_cart');
+            let cartData = [];
+            let itemsHtml = '';
+            let isDigitalOnly = false;
+            let grandTotal = 0; // Tambah variable untuk simpan jumlah
+            
+            if (savedCart) {
+                try {
+                    cartData = JSON.parse(savedCart);
+                    if (cartData && cartData.length > 0) {
+                        itemsHtml = '<div class="text-left mt-4 mb-2"><strong class="text-xs text-gray-400 uppercase tracking-wider">Ringkasan Pesanan:</strong><ul class="mt-2 space-y-2">';
+                        cartData.forEach(item => {
+                            const itemTotal = (item.price * item.qty);
+                            grandTotal += itemTotal;
+                            itemsHtml += `<li class="text-sm text-gray-200 flex justify-between border-b border-gray-700/50 pb-2"><span class="truncate pr-2">${item.name} <span class="text-emerald-400 text-xs ml-1">x${item.qty}</span></span><span class="text-emerald-300 font-mono">RM${itemTotal.toFixed(2)}</span></li>`;
+                        });
+                        itemsHtml += '</ul></div>';
+                        
+                        const hasPhysical = cartData.some(item => {
+                             const prod = this.state.products.find(x => x.id == item.id);
+                             return prod && prod.is_digital !== 1;
+                        });
+                        isDigitalOnly = !hasPhysical;
+                    }
+                } catch(e) { console.error("Ralat baca troli:", e); }
+            }
 
-            let extraMessage = isDigitalOnly 
-                ? '<div class="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-300"><i class="ri-mail-send-line"></i> Sila semak emel atau notifikasi untuk dapatkan link akses produk digital anda sebentar lagi.</div>'
-                : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
+            let extraMessage = isDigitalOnly 
+                ? '<div class="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-300"><i class="ri-mail-send-line"></i> Sila semak emel atau notifikasi untuk dapatkan link akses produk digital anda sebentar lagi.</div>'
+                : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
 
-            window.history.replaceState({},'',window.location.pathname); 
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Bayaran Berjaya!',
-                html: `
-                    <div class="text-sm text-gray-300 mb-2">Terima kasih atas pembelian anda.</div>
-                    <div class="bg-[#2a3038] p-4 rounded-xl text-left border border-white/5 shadow-inner">
-                        <div class="flex justify-between mb-1"><span class="text-gray-400 text-xs">No. Pesanan:</span> <span class="text-white font-mono text-xs">#${orderId.slice(-6)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-400 text-xs">No. Transaksi (Bank):</span> <span class="text-white font-mono text-xs">${transactionId}</span></div>
-                        ${itemsHtml}
-                    </div>
-                    ${extraMessage}
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Tutup',
-                cancelButtonText: '<i class="ri-download-2-line"></i> Simpan Resit',
-                confirmButtonColor: '#374151', // Warna kelabu untuk butang tutup
-                cancelButtonColor: '#10b981', // Warna hijau untuk butang download
-                background: '#1e2329', 
-                color: '#fff',
-                customClass: { htmlContainer: 'text-left' }
-            }).then((result) => {
-                // Jika butang "Simpan Resit" ditekan
-                if (result.dismiss === Swal.DismissReason.cancel) {
-                    this.printReceipt(orderId, transactionId, cartData);
-                }
-            }); 
-            
-            // Kosongkan troli
-            localStorage.removeItem('asmr_cart'); 
-            this.state.cart = []; 
-            this.updateCartUI(); 
-        }
-    }, // <--- Pastikan ada koma di sini sebelum letak fungsi baru
-    printReceipt(orderId, transactionId, cartData) {
-        if (!cartData || cartData.length === 0) return;
-        
-        let subtotal = 0;
-        let itemsTr = '';
-        
-        cartData.forEach(item => {
-            const itemTotal = item.price * item.qty;
-            subtotal += itemTotal;
-            itemsTr += `
-                <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc;">
-                        <div style="font-weight: bold;">${item.name}</div>
-                        <div style="font-size: 0.9em; color: #555;">RM${item.price.toFixed(2)} x ${item.qty}</div>
-                    </td>
-                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc; text-align: right; vertical-align: bottom;">
-                        RM${itemTotal.toFixed(2)}
-                    </td>
-                </tr>
-            `;
-        });
+            window.history.replaceState({},'',window.location.pathname); 
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Bayaran Berjaya!',
+                html: `
+                    <div class="text-sm text-gray-300 mb-2">Terima kasih atas pembelian anda.</div>
+                    <div class="bg-[#2a3038] p-4 rounded-xl text-left border border-white/5 shadow-inner">
+                        <div class="flex justify-between mb-1"><span class="text-gray-400 text-xs">No. Pesanan:</span> <span class="text-white font-mono text-xs">#${orderId.slice(-6)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400 text-xs">No. Transaksi (Bank):</span> <span class="text-white font-mono text-xs">${transactionId}</span></div>
+                        ${itemsHtml}
+                        <div class="flex justify-between mt-3 pt-2 border-t border-gray-600"><span class="text-gray-400 text-sm font-bold">Jumlah Dibayar:</span> <span class="text-emerald-400 font-bold text-sm">RM${grandTotal.toFixed(2)}</span></div>
+                    </div>
+                    ${extraMessage}
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Tutup',
+                cancelButtonText: '<i class="ri-download-2-line"></i> Simpan Resit',
+                confirmButtonColor: '#374151', 
+                cancelButtonColor: '#10b981', 
+                background: '#1e2329', 
+                color: '#fff',
+                customClass: { htmlContainer: 'text-left' }
+            }).then((result) => {
+                // Jika butang "Simpan Resit" ditekan
+                if (result.dismiss === Swal.DismissReason.cancel) {
+                    this.printReceipt(orderId, transactionId, cartData, grandTotal);
+                }
+            }); 
+            
+            // KOSONGKAN TROLI DI SINI SAHAJA SELEPAS NOTIFIKASI KELUAR
+            localStorage.removeItem('asmr_cart'); 
+            this.state.cart = []; 
+            this.updateCartUI(); 
+        }
+    },
+    
+    printReceipt(orderId, transactionId, cartData, grandTotal) {
+        if (!cartData || cartData.length === 0) {
+            this.showToast('Gagal memuat turun resit: Tiada data.', 'error');
+            return;
+        }
+        
+        let itemsTr = '';
+        
+        cartData.forEach(item => {
+            const itemTotal = item.price * item.qty;
+            itemsTr += `
+                <tr>
+                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc;">
+                        <div style="font-weight: bold;">${item.name}</div>
+                        <div style="font-size: 0.9em; color: #555;">RM${item.price.toFixed(2)} x ${item.qty}</div>
+                    </td>
+                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc; text-align: right; vertical-align: bottom;">
+                        RM${itemTotal.toFixed(2)}
+                    </td>
+                </tr>
+            `;
+        });
 
-        const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
-        const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
+        const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-        // Hasilkan tetingkap baru untuk resit
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
-        
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Resit Pesanan #${orderId.slice(-6)}</title>
-                <style>
-                    body { font-family: 'Courier New', Courier, monospace; color: #000; background: #fff; padding: 20px; max-width: 350px; margin: 0 auto; line-height: 1.4; }
-                    .text-center { text-align: center; }
-                    .header { margin-bottom: 20px; }
-                    .header h2 { margin: 0 0 5px 0; font-size: 1.4em; }
-                    .divider { border-bottom: 1px dashed #000; margin: 15px 0; }
-                    .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
-                    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-                    .total-section { font-size: 1.1em; font-weight: bold; margin-top: 15px; }
-                    .footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #555; }
-                    
-                    @media print {
-                        body { width: 100%; margin: 0; padding: 0; }
-                        /* Paksa print untuk elak background gelap dari dark mode browser */
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="header text-center">
-                    <h2>${shopName}</h2>
-                    <div>RESIT PEMBELIAN</div>
-                </div>
-                
-                <div class="row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
-                <div class="row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
-                <div class="row"><span>Tarikh:</span> <span>${dateStr}</span></div>
-                
-                <div class="divider"></div>
-                
-                <table>
-                    <tbody>
-                        ${itemsTr}
-                    </tbody>
-                </table>
-                
-                <div class="row total-section">
-                    <span>Subtotal Produk:</span> 
-                    <span>RM${subtotal.toFixed(2)}</span>
-                </div>
-                
-                <div class="divider"></div>
-                <div class="footer">
-                    Terima kasih kerana membeli-belah dengan kami!<br>
-                    <small>Sila simpan resit ini untuk rujukan.</small>
-                </div>
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Resit Pesanan #${orderId.slice(-6)}</title>
+                <style>
+                    body { font-family: 'Courier New', Courier, monospace; color: #000; background: #fff; padding: 20px; max-width: 350px; margin: 0 auto; line-height: 1.4; }
+                    .text-center { text-align: center; }
+                    .header { margin-bottom: 20px; }
+                    .header h2 { margin: 0 0 5px 0; font-size: 1.4em; }
+                    .divider { border-bottom: 1px dashed #000; margin: 15px 0; }
+                    .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
+                    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
+                    .total-section { font-size: 1.1em; font-weight: bold; margin-top: 15px; }
+                    .footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #555; }
+                    
+                    @media print {
+                        body { width: 100%; margin: 0; padding: 0; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="header text-center">
+                    <h2>${shopName}</h2>
+                    <div>RESIT PEMBELIAN</div>
+                </div>
+                
+                <div class="row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
+                <div class="row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
+                <div class="row"><span>Tarikh:</span> <span>${dateStr}</span></div>
+                
+                <div class="divider"></div>
+                
+                <table>
+                    <tbody>
+                        ${itemsTr}
+                    </tbody>
+                </table>
+                
+                <div class="row total-section">
+                    <span>Jumlah Dibayar:</span> 
+                    <span>RM${(grandTotal || 0).toFixed(2)}</span>
+                </div>
+                
+                <div class="divider"></div>
+                <div class="footer">
+                    Terima kasih kerana membeli-belah dengan kami!<br>
+                    <small>Sila simpan resit ini untuk rujukan.</small>
+                </div>
 
-                <script>
-                    // Buka dialog print secara automatik bila sedia
-                    window.onload = function() { 
-                        setTimeout(() => {
-                            window.print();
-                            // Pilihan: Tutup tab secara automatik lepas print (buang '//' di bawah jika nak guna)
-                            // window.close(); 
-                        }, 500);
-                    }
-                </script>
-            </body>
-            </html>
-        `;
+                <script>
+                    window.onload = function() { 
+                        setTimeout(() => { window.print(); }, 500);
+                    }
+                </script>
+            </body>
+            </html>
+        `;
 
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
- };
+        printWindow.document.write(html);
+        printWindow.document.close();
+    }
+};
 document.addEventListener('DOMContentLoaded', () => SHOP.init());
