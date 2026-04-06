@@ -77,7 +77,25 @@ const SHOP = {
                 this.state.settings = set.data || {};
             }
             
-            if(this.state.settings.shop_name) document.getElementById('shop-brand-name').innerText = this.state.settings.shop_name;
+           // --- MULA UPDATE LOGO & NAMA KEDAI ---
+            const brandNameEl = document.getElementById('shop-brand-name');
+            const brandLogoEl = document.getElementById('shop-brand-logo');
+
+            if(this.state.settings.shop_name && brandNameEl) {
+                brandNameEl.innerText = this.state.settings.shop_name;
+            }
+
+            if(this.state.settings.shop_logo && this.state.settings.shop_logo.trim() !== "" && brandLogoEl) {
+                // Kalau ada URL logo: Sembunyikan teks, tunjuk logo
+                brandNameEl.classList.add('hidden');
+                brandLogoEl.src = this.state.settings.shop_logo;
+                brandLogoEl.classList.remove('hidden');
+            } else if(brandNameEl && brandLogoEl) {
+                // Kalau tiada URL logo: Tunjuk teks semula, sembunyikan kotak logo
+                brandNameEl.classList.remove('hidden');
+                brandLogoEl.classList.add('hidden');
+            }
+            // --- TAMAT UPDATE LOGO & NAMA KEDAI ---
 
             const ptRate = parseFloat(this.state.settings.pt_redeem_value) || 0.10;
             const ptStar = parseInt(this.state.settings.pt_reward_star) || 1;
