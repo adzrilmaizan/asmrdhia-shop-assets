@@ -1179,9 +1179,9 @@ const SHOP = {
                 } catch(e) { console.error("Ralat baca troli:", e); }
             }
 
-            let extraMessage = isDigitalOnly 
-                ? '<div class="mt-4 p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-xs text-purple-300"><i class="ri-mail-send-line"></i> Sila semak emel atau notifikasi untuk dapatkan link akses produk digital anda sebentar lagi.</div>'
-                : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
+            let extraMessage = isDigitalOnly 
+                ? '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-mail-send-line"></i> Sila semak emel anda untuk salinan resit dan butiran pesanan sebentar lagi.</div>'
+                : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
 
             window.history.replaceState({},'',window.location.pathname); 
             
@@ -1220,23 +1220,22 @@ const SHOP = {
         }
     },
     
-    printReceipt(orderId, transactionId, cartData, grandTotal) {
+   printReceipt(orderId, transactionId, cartData, grandTotal) {
         if (!cartData || cartData.length === 0) {
-            this.showToast('Gagal memuat turun resit: Tiada data.', 'error');
+            this.showToast('Gagal memuat turun resit: Tiada data pesanan.', 'error');
             return;
         }
         
         let itemsTr = '';
-        
         cartData.forEach(item => {
             const itemTotal = item.price * item.qty;
             itemsTr += `
-                <tr>
-                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc;">
-                        <div style="font-weight: bold;">${item.name}</div>
-                        <div style="font-size: 0.9em; color: #555;">RM${item.price.toFixed(2)} x ${item.qty}</div>
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 12px 0;">
+                        <div style="font-weight: 600; color: #1f2937;">${item.name}</div>
+                        <div style="font-size: 12px; color: #6b7280;">RM${item.price.toFixed(2)} x ${item.qty}</div>
                     </td>
-                    <td style="padding: 8px 0; border-bottom: 1px dashed #ccc; text-align: right; vertical-align: bottom;">
+                    <td style="padding: 12px 0; text-align: right; font-weight: 600; color: #111827; vertical-align: top;">
                         RM${itemTotal.toFixed(2)}
                     </td>
                 </tr>
@@ -1246,7 +1245,7 @@ const SHOP = {
         const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
         const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        const printWindow = window.open('', '_blank', 'width=600,height=800');
         
         const html = `
             <!DOCTYPE html>
@@ -1254,55 +1253,64 @@ const SHOP = {
             <head>
                 <title>Resit Pesanan #${orderId.slice(-6)}</title>
                 <style>
-                    body { font-family: 'Courier New', Courier, monospace; color: #000; background: #fff; padding: 20px; max-width: 350px; margin: 0 auto; line-height: 1.4; }
-                    .text-center { text-align: center; }
-                    .header { margin-bottom: 20px; }
-                    .header h2 { margin: 0 0 5px 0; font-size: 1.4em; }
-                    .divider { border-bottom: 1px dashed #000; margin: 15px 0; }
-                    .row { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 0.9em; }
-                    table { width: 100%; border-collapse: collapse; font-size: 0.9em; }
-                    .total-section { font-size: 1.1em; font-weight: bold; margin-top: 15px; }
-                    .footer { text-align: center; margin-top: 30px; font-size: 0.8em; color: #555; }
-                    
+                    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+                    body {
+                        font-family: 'Plus Jakarta Sans', sans-serif;
+                        color: #1f2937; background: #f3f4f6; padding: 40px 20px;
+                        display: flex; justify-content: center; margin: 0;
+                    }
+                    .receipt-card {
+                        background: #ffffff; width: 100%; max-width: 400px;
+                        padding: 30px; border-radius: 16px;
+                        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+                    }
+                    .header { text-align: center; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
+                    .header h2 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; color: #111827; }
+                    .header p { margin: 0; font-size: 11px; color: #6b7280; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
+                    .info-row span:first-child { color: #6b7280; }
+                    .info-row span:last-child { font-weight: 600; color: #111827; }
+                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+                    .total-section {
+                        display: flex; justify-content: space-between; align-items: center;
+                        margin-top: 20px; padding-top: 15px; border-top: 2px solid #e5e7eb;
+                        font-size: 18px; font-weight: 700; color: #111827;
+                    }
+                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #9ca3af; line-height: 1.5; }
                     @media print {
-                        body { width: 100%; margin: 0; padding: 0; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; } 
+                        body { background: #ffffff; padding: 0; display: block; }
+                        .receipt-card { box-shadow: none; max-width: 100%; padding: 0; border-radius: 0; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     }
                 </style>
             </head>
             <body>
-                <div class="header text-center">
-                    <h2>${shopName}</h2>
-                    <div>RESIT PEMBELIAN</div>
-                </div>
-                
-                <div class="row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
-                <div class="row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
-                <div class="row"><span>Tarikh:</span> <span>${dateStr}</span></div>
-                
-                <div class="divider"></div>
-                
-                <table>
-                    <tbody>
-                        ${itemsTr}
-                    </tbody>
-                </table>
-                
-                <div class="row total-section">
-                    <span>Jumlah Dibayar:</span> 
-                    <span>RM${(grandTotal || 0).toFixed(2)}</span>
-                </div>
-                
-                <div class="divider"></div>
-                <div class="footer">
-                    Terima kasih kerana membeli-belah dengan kami!<br>
-                    <small>Sila simpan resit ini untuk rujukan.</small>
-                </div>
+                <div class="receipt-card">
+                    <div class="header">
+                        <h2>${shopName}</h2>
+                        <p>Resit Pembelian</p>
+                    </div>
 
+                    <div class="info-row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
+                    <div class="info-row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
+                    <div class="info-row"><span>Tarikh:</span> <span>${dateStr}</span></div>
+
+                    <table>
+                        <tbody>${itemsTr}</tbody>
+                    </table>
+
+                    <div class="total-section">
+                        <span>Jumlah Dibayar:</span>
+                        <span>RM${(grandTotal || 0).toFixed(2)}</span>
+                    </div>
+
+                    <div class="footer">
+                        <strong>Terima kasih!</strong><br>
+                        Sila simpan resit ini untuk rujukan anda.
+                    </div>
+                </div>
                 <script>
-                    window.onload = function() { 
-                        setTimeout(() => { window.print(); }, 500);
-                    }
+                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
                 </script>
             </body>
             </html>
