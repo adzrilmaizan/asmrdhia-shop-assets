@@ -1221,103 +1221,96 @@ const SHOP = {
     },
     
    printReceipt(orderId, transactionId, cartData, grandTotal) {
-        if (!cartData || cartData.length === 0) {
-            this.showToast('Gagal memuat turun resit: Tiada data pesanan.', 'error');
-            return;
-        }
-        
-        let itemsTr = '';
-        cartData.forEach(item => {
-            const itemTotal = item.price * item.qty;
-            itemsTr += `
-                <tr style="border-bottom: 1px solid #f3f4f6;">
-                    <td style="padding: 12px 0;">
-                        <div style="font-weight: 600; color: #1f2937;">${item.name}</div>
-                        <div style="font-size: 12px; color: #6b7280;">RM${item.price.toFixed(2)} x ${item.qty}</div>
-                    </td>
-                    <td style="padding: 12px 0; text-align: right; font-weight: 600; color: #111827; vertical-align: top;">
-                        RM${itemTotal.toFixed(2)}
-                    </td>
-                </tr>
-            `;
-        });
+        if (!cartData || cartData.length === 0) {
+            this.showToast('Gagal memuat turun resit: Tiada data pesanan.', 'error');
+            return;
+        }
+        
+        let itemsTr = '';
+        let calculatedTotal = 0;
 
-        const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
-        const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        cartData.forEach(item => {
+            const itemTotal = item.price * item.qty;
+            calculatedTotal += itemTotal;
+            itemsTr += `
+                <tr>
+                    <td>
+                        <div class="item-name">${item.name}</div>
+                        <div class="item-qty">RM${item.price.toFixed(2)} x ${item.qty}</div>
+                    </td>
+                    <td>RM${itemTotal.toFixed(2)}</td>
+                </tr>
+            `;
+        });
 
-        const printWindow = window.open('', '_blank', 'width=600,height=800');
-        
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Resit Pesanan #${orderId.slice(-6)}</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-                    body {
-                        font-family: 'Plus Jakarta Sans', sans-serif;
-                        color: #1f2937; background: #f3f4f6; padding: 40px 20px;
-                        display: flex; justify-content: center; margin: 0;
-                    }
-                    .receipt-card {
-                        background: #ffffff; width: 100%; max-width: 400px;
-                        padding: 30px; border-radius: 16px;
-                        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-                    }
-                    .header { text-align: center; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
-                    .header h2 { margin: 0 0 5px 0; font-size: 24px; font-weight: 700; color: #111827; }
-                    .header p { margin: 0; font-size: 11px; color: #6b7280; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-                    .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 13px; }
-                    .info-row span:first-child { color: #6b7280; }
-                    .info-row span:last-child { font-weight: 600; color: #111827; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
-                    .total-section {
-                        display: flex; justify-content: space-between; align-items: center;
-                        margin-top: 20px; padding-top: 15px; border-top: 2px solid #e5e7eb;
-                        font-size: 18px; font-weight: 700; color: #111827;
-                    }
-                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #9ca3af; line-height: 1.5; }
-                    @media print {
-                        body { background: #ffffff; padding: 0; display: block; }
-                        .receipt-card { box-shadow: none; max-width: 100%; padding: 0; border-radius: 0; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="receipt-card">
-                    <div class="header">
-                        <h2>${shopName}</h2>
-                        <p>Resit Pembelian</p>
-                    </div>
+        const finalTotal = grandTotal || calculatedTotal;
+        const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
+        const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-                    <div class="info-row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
-                    <div class="info-row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
-                    <div class="info-row"><span>Tarikh:</span> <span>${dateStr}</span></div>
+        const printWindow = window.open('', '_blank', 'width=450,height=700');
+        
+        const html = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Resit Pesanan #${orderId.slice(-6)}</title>
+                <style>
+                    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+                    body { font-family: 'Plus Jakarta Sans', sans-serif; color: #111827; background: #f3f4f6; margin: 0; padding: 20px; display: flex; justify-content: center; }
+                    .receipt { background: #fff; width: 100%; max-width: 380px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+                    .header { text-align: center; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
+                    .header h2 { margin: 0 0 5px 0; font-size: 22px; font-weight: 700; color: #111827; }
+                    .header p { margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+                    .info { margin-bottom: 20px; }
+                    .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
+                    .info-row span:first-child { color: #6b7280; }
+                    .info-row span:last-child { font-weight: 600; color: #111827; }
+                    .table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
+                    .table td { padding: 12px 0; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
+                    .table td:last-child { text-align: right; font-weight: 600; }
+                    .item-name { font-weight: 600; color: #1f2937; margin-bottom: 4px; line-height: 1.3; }
+                    .item-qty { font-size: 12px; color: #6b7280; }
+                    .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #e5e7eb; padding-top: 15px; font-size: 18px; font-weight: 700; }
+                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #9ca3af; line-height: 1.5; }
+                    @media print {
+                        body { background: #fff; padding: 0; display: block; }
+                        .receipt { box-shadow: none; padding: 0; max-width: 100%; }
+                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="receipt">
+                    <div class="header">
+                        <h2>${shopName}</h2>
+                        <p>Resit Pembelian</p>
+                    </div>
+                    <div class="info">
+                        <div class="info-row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
+                        <div class="info-row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
+                        <div class="info-row"><span>Tarikh:</span> <span>${dateStr}</span></div>
+                    </div>
+                    <table class="table">
+                        <tbody>${itemsTr}</tbody>
+                    </table>
+                    <div class="total-row">
+                        <span>Jumlah Dibayar:</span>
+                        <span style="color: #10b981;">RM${finalTotal.toFixed(2)}</span>
+                    </div>
+                    <div class="footer">
+                        <strong>Terima kasih atas sokongan anda!</strong><br>
+                        Sila simpan resit ini untuk rujukan.
+                    </div>
+                </div>
+                <script>
+                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
+                </script>
+            </body>
+            </html>
+        `;
 
-                    <table>
-                        <tbody>${itemsTr}</tbody>
-                    </table>
-
-                    <div class="total-section">
-                        <span>Jumlah Dibayar:</span>
-                        <span>RM${(grandTotal || 0).toFixed(2)}</span>
-                    </div>
-
-                    <div class="footer">
-                        <strong>Terima kasih!</strong><br>
-                        Sila simpan resit ini untuk rujukan anda.
-                    </div>
-                </div>
-                <script>
-                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
-                </script>
-            </body>
-            </html>
-        `;
-
-        printWindow.document.write(html);
-        printWindow.document.close();
-    }
+        printWindow.document.write(html);
+        printWindow.document.close();
+    }
 };
 document.addEventListener('DOMContentLoaded', () => SHOP.init());
