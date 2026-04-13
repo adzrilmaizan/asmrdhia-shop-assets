@@ -480,9 +480,17 @@ const ASMRDHIA_APP = {
         if(prodStatus) prodStatus.value = 1;
         
         const prodFreeShip = document.getElementById('prod-free-ship');
-        if(prodFreeShip) prodFreeShip.checked = false;
-        
-        const prodIsCountdown = document.getElementById('prod-is-countdown');
+        if(prodFreeShip) prodFreeShip.checked = false;
+
+        const prodIsDigital = document.getElementById('prod-is-digital');
+        if(prodIsDigital) {
+            prodIsDigital.checked = false;
+            document.getElementById('digital-link-box')?.classList.add('hidden');
+        }
+        const accessLink = document.getElementById('prod-access-link');
+        if(accessLink) accessLink.value = '';
+        
+        const prodIsCountdown = document.getElementById('prod-is-countdown');
         if(prodIsCountdown) prodIsCountdown.checked = false;
         
         this.toggleCountdown(false);
@@ -667,10 +675,20 @@ const ASMRDHIA_APP = {
         document.getElementById('prod-cat').value = p.category || '';
         document.getElementById('prod-desc').value = meta.cleanDesc;
         document.getElementById('prod-stock').value = meta.stock;
-        document.getElementById('prod-status').value = meta.isActive;
-        document.getElementById('prod-free-ship').checked = (p.is_free_shipping === 1);
-        
-        document.getElementById('main-media-list').innerHTML = '';
+        document.getElementById('prod-status').value = meta.isActive;
+        document.getElementById('prod-free-ship').checked = (p.is_free_shipping === 1);
+        
+        let pMetaData = {};
+        try { pMetaData = JSON.parse(p.meta_data || '{}'); } catch(e){}
+        const isDigitalBox = document.getElementById('prod-is-digital');
+        const linkBox = document.getElementById('prod-access-link');
+        if(isDigitalBox) {
+            isDigitalBox.checked = (p.is_digital === 1 || pMetaData.is_digital === 1);
+            document.getElementById('digital-link-box').classList.toggle('hidden', !isDigitalBox.checked);
+        }
+        if(linkBox) linkBox.value = pMetaData.access_link || '';
+
+        document.getElementById('main-media-list').innerHTML = '';
         const mediaArr = this.parseMedia(p.image);
         if(mediaArr.length > 0) {
             mediaArr.forEach(url => this.addMainMedia(url));
@@ -772,11 +790,13 @@ const ASMRDHIA_APP = {
             variations: JSON.stringify(variations),
             discount_price: finalDiscount,
             is_countdown: configObj.c,
-            live_date: configObj.c ? configObj.t : null,
-            is_free_shipping: document.getElementById('prod-free-ship')?.checked ? 1 : 0
-        };
-        
-        try {
+            live_date: configObj.c ? configObj.t : null,
+            is_free_shipping: document.getElementById('prod-free-ship')?.checked ? 1 : 0,
+            is_digital: document.getElementById('prod-is-digital')?.checked ? 1 : 0,
+            access_link: document.getElementById('prod-access-link')?.value || ''
+        };
+        
+        try {
             const res = await this.request('POST', data);
             if (res.status === 'success') {
                 Swal.fire({
