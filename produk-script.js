@@ -485,7 +485,7 @@ const ASMRDHIA_APP = {
         const prodIsDigital = document.getElementById('prod-is-digital');
         if(prodIsDigital) {
             prodIsDigital.checked = false;
-            document.getElementById('digital-link-box')?.classList.add('hidden');
+            this.toggleDigital(false);
         }
         const accessLink = document.getElementById('prod-access-link');
         if(accessLink) accessLink.value = '';
@@ -650,6 +650,23 @@ const ASMRDHIA_APP = {
         if(countdownBox) countdownBox.style.display = show ? 'block' : 'none';
         if(countdownPreview) countdownPreview.style.display = show ? 'block' : 'none';
     },
+    toggleDigital(show) {
+        const linkBox = document.getElementById('digital-link-box');
+        const weightInput = document.getElementById('prod-weight');
+
+        if(linkBox) linkBox.classList.toggle('hidden', !show);
+        
+        // Disable & gelapkan kotak berat jika produk digital ON
+        if(weightInput) {
+            weightInput.disabled = show;
+            if(show) {
+                weightInput.value = ''; // Kosongkan nilai berat
+                weightInput.classList.add('bg-gray-100', 'cursor-not-allowed', 'opacity-60'); 
+            } else {
+                weightInput.classList.remove('bg-gray-100', 'cursor-not-allowed', 'opacity-60');
+            }
+        }
+    },
     
     validateScheduleDate() {
         const date = document.getElementById('prod-live-date')?.value;
@@ -684,7 +701,7 @@ const ASMRDHIA_APP = {
         const linkBox = document.getElementById('prod-access-link');
         if(isDigitalBox) {
             isDigitalBox.checked = (p.is_digital === 1 || pMetaData.is_digital === 1);
-            document.getElementById('digital-link-box').classList.toggle('hidden', !isDigitalBox.checked);
+            this.toggleDigital(isDigitalBox.checked);
         }
         if(linkBox) linkBox.value = pMetaData.access_link || '';
 
