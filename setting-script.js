@@ -7,7 +7,7 @@ const SETTING = {
             const resSettings = await fetch(this.workerURL + "?action=get_shop_settings&_t=" + Date.now()).then(r=>r.json());
             if (resSettings.status === 'success') this.state.settings = resSettings.data || {};
 
-            const keys = ['shop_name', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
+            const keys = ['shop_name', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'bayarcash_token', 'bayarcash_portal', 'bayarcash_active', 'bayarcash_channel', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
             
             keys.forEach(k => { 
                 if (this.state.settings[k] !== undefined && document.getElementById(k)) {
@@ -15,8 +15,8 @@ const SETTING = {
                 }
             });
 
-            if(document.getElementById('toyyib_active').value === "") document.getElementById('toyyib_active').value = "1";
-            if(document.getElementById('toyyib_charge_cust').value === "") document.getElementById('toyyib_charge_cust').value = "1";
+            if(document.getElementById('bayarcash_active') && document.getElementById('bayarcash_active').value === "") document.getElementById('bayarcash_active').value = "1";
+            if(document.getElementById('bayarcash_channel') && document.getElementById('bayarcash_channel').value === "") document.getElementById('bayarcash_channel').value = "5";
 
             this.updateSidebar();
             document.getElementById('loading-indicator').classList.add('hidden');
@@ -43,12 +43,13 @@ const SETTING = {
         if (name && phone && url) profileEl.innerHTML = '<span class="text-emerald-600 bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-100 shadow-sm"><i class="ri-checkbox-circle-fill mr-1"></i> LENGKAP</span>';
         else profileEl.innerHTML = '<span class="text-amber-600 bg-amber-50 px-3 py-1 rounded-lg border border-amber-100 shadow-sm"><i class="ri-error-warning-fill mr-1"></i> TAK LENGKAP</span>';
 
-        const tKey = document.getElementById('toyyib_key')?.value;
-        const tCat = document.getElementById('toyyib_cat')?.value;
-        const tActive = document.getElementById('toyyib_active')?.value;
+        const bToken = document.getElementById('bayarcash_token')?.value;
+        const bPortal = document.getElementById('bayarcash_portal')?.value;
+        const bActive = document.getElementById('bayarcash_active')?.value;
+        const bChannel = document.getElementById('bayarcash_channel')?.value || '?';
         
         const paymentEl = document.getElementById('stat-payment');
-        if (tKey && tCat && tActive === '1') paymentEl.innerHTML = '<span class="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 shadow-sm"><i class="ri-link-m"></i> TOYYIBPAY</span>';
+        if (bToken && bPortal && bActive === '1') paymentEl.innerHTML = `<span class="text-blue-600 font-bold bg-blue-50 px-3 py-1 rounded-lg border border-blue-100 shadow-sm"><i class="ri-link-m"></i> BAYARCASH (CH:${bChannel})</span>`;
         else paymentEl.innerHTML = '<span class="text-slate-500 font-bold bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 shadow-sm"><i class="ri-whatsapp-line"></i> MANUAL</span>';
         
         const tgKey = document.getElementById('telegram_bot_token')?.value;
@@ -77,6 +78,20 @@ const SETTING = {
             if (isNaN(val) || val < 0) return "Sila pastikan semua kos penghantaran diisi dengan nombor positif.";
         }
 
+        // TAMBAHAN VALIDASI DARI DEEPSEEK
+        const bActive = document.getElementById('bayarcash_active')?.value;
+        if (bActive === '1') {
+            const bToken = document.getElementById('bayarcash_token')?.value.trim();
+            const bPortal = document.getElementById('bayarcash_portal')?.value.trim();
+            if (!bToken) return "Sila masukkan Token BayarCash jika anda mahu mengaktifkannya.";
+            if (!bPortal) return "Sila masukkan Portal ID BayarCash.";
+        }
+        
+        const channel = document.getElementById('bayarcash_channel')?.value;
+        if (channel && (isNaN(channel) || channel < 1 || channel > 99)) {
+            return "Channel BayarCash mestilah nombor 1-99 (Gunakan 5 untuk FPX).";
+        }
+
         return null; 
     },
 
@@ -97,7 +112,7 @@ const SETTING = {
 
         const payload = { action: 'save_shop_settings' };
         
-        const keys = ['shop_name', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'toyyib_key', 'toyyib_cat', 'toyyib_active', 'toyyib_charge_cust', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
+        const keys = ['shop_name', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'bayarcash_token', 'bayarcash_portal', 'bayarcash_active', 'bayarcash_channel', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
         
         keys.forEach(k => { if (document.getElementById(k)) payload[k] = document.getElementById(k).value; });
 
@@ -121,6 +136,8 @@ const SETTING = {
 
 window.addEventListener('load', () => SETTING.init());
 
-['shop_name', 'shop_phone', 'shop_url', 'toyyib_key', 'toyyib_cat', 'telegram_bot_token', 'telegram_chat_id'].forEach(id => {
+// TANGKAP SEMUA INPUT UNTUK UPDATE SIDEBAR
+['shop_name', 'shop_phone', 'shop_url', 'bayarcash_token', 'bayarcash_portal', 'bayarcash_active', 'bayarcash_channel', 'telegram_bot_token', 'telegram_chat_id'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', () => SETTING.updateSidebar());
+    document.getElementById(id)?.addEventListener('change', () => SETTING.updateSidebar()); // Tambah event 'change' untuk select box
 });
