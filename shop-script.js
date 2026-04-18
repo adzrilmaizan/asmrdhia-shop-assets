@@ -677,9 +677,8 @@ const SHOP = {
 
         // --- PENGIRAAN BARU UNTUK UI TROLI DENGAN FPX ---
         let baseTotal = sub - disc - ptDiscAmount;
-        let isToyyibActive = this.state.settings.toyyib_active !== '0';
-        let isChargeCust = this.state.settings.toyyib_charge_cust !== '0';
-        let fpxFee = (isToyyibActive && isChargeCust && baseTotal > 0) ? 1.00 : 0;
+        // PATCH: Tutup caj FPX manual kerana Bayarcash tidak menyokong fungsi ini secara lalai
+        let fpxFee = 0;
 
         const cartFpxRow = document.getElementById('cart-fpx-row');
         if (cartFpxRow) {
@@ -835,9 +834,7 @@ const SHOP = {
         let baseTotal = (sub - disc - ptDiscAmount + ship);
 
         // KIRAAN FPX FEE (HANYA UNTUK PAPARAN UI)
-        let isToyyibActive = this.state.settings.toyyib_active !== '0';
-        let isChargeCust = this.state.settings.toyyib_charge_cust !== '0';
-        let fpxFee = (isToyyibActive && isChargeCust && baseTotal > 0) ? 1.00 : 0;
+        let fpxFee = 0; // PATCH: Tiada paparan caj tambahan RM1 untuk Bayarcash
 
         const shipEl = document.getElementById('co-shipping');
         if (isAllDigital) {
@@ -1145,11 +1142,14 @@ const SHOP = {
     },
 
     checkPaymentStatus() {
-        const p = new URLSearchParams(window.location.search);
-        
-        if(p.get('status_id') === '1') { 
-            const orderId = p.get('order_id') || p.get('refno') || 'N/A';
-            const transactionId = p.get('transaction_id') || 'N/A';
+        const p = new URLSearchParams(window.location.search);
+        
+        // PATCH: Bayarcash guna 'status=3', 'order_number' dan 'id' untuk Return URL
+        const isSuccess = p.get('status_id') === '1' || p.get('status') === '3' || p.get('status') === 'successful';
+        
+        if(isSuccess) { 
+            const orderId = p.get('order_number') || p.get('order_id') || p.get('refno') || 'N/A';
+            const transactionId = p.get('transaction_id') || p.get('id') || 'N/A';
             
             // Selamatkan data troli untuk kegunaan resit
             const savedCart = localStorage.getItem('asmr_cart');
