@@ -677,8 +677,8 @@ const SHOP = {
 
         // --- PENGIRAAN BARU UNTUK UI TROLI DENGAN FPX ---
         let baseTotal = sub - disc - ptDiscAmount;
-        // PATCH: Tutup caj FPX manual kerana Bayarcash tidak menyokong fungsi ini secara lalai
-        let fpxFee = 0;
+        let isBayarcashActive = this.state.settings.bayarcash_active !== '0';
+        let fpxFee = (isBayarcashActive && baseTotal > 0) ? 1.00 : 0;
 
         const cartFpxRow = document.getElementById('cart-fpx-row');
         if (cartFpxRow) {
@@ -830,11 +830,12 @@ const SHOP = {
 
         const ship = isAllDigital ? 0 : (this.calculateShipping() || 0);
         
-        // PENGIRAAN BASE TOTAL SEBENAR (UNTUK HANTAR KE DATABASE/TOYYIBPAY)
+        // PENGIRAAN BASE TOTAL SEBENAR
         let baseTotal = (sub - disc - ptDiscAmount + ship);
 
-        // KIRAAN FPX FEE (HANYA UNTUK PAPARAN UI)
-        let fpxFee = 0; // PATCH: Tiada paparan caj tambahan RM1 untuk Bayarcash
+        // KIRAAN FPX FEE BAYARCASH
+        let isBayarcashActive = this.state.settings.bayarcash_active !== '0';
+        let fpxFee = (isBayarcashActive && baseTotal > 0) ? 1.00 : 0;
 
         const shipEl = document.getElementById('co-shipping');
         if (isAllDigital) {
@@ -869,8 +870,8 @@ const SHOP = {
         // PAPAR GRAND TOTAL TERMASUK RM1 (Supaya Pelanggan Tak Terkejut)
         document.getElementById('co-grand-total').innerText = `RM${Math.max(0, displayTotal).toFixed(2)}`;
         
-        // HANTAR 'finalGrand' (Harga Tanpa Caj) ke fungsi processOrder
-        return { sub, disc, ptDiscAmount, ship, total: finalGrand, isAllDigital };
+        // HANTAR 'displayTotal' (TERMASUK CAJ RM1) KE FUNGSI PROCESS ORDER!
+        return { sub, disc, ptDiscAmount, ship, total: displayTotal, isAllDigital };
     },
 
     openReviewVerifyModal() {
