@@ -96,6 +96,17 @@ const SHOP = {
                 brandLogoEl.classList.add('hidden');
             }
             // --- TAMAT UPDATE LOGO & NAMA KEDAI ---
+            // --- MULA KOD FOOTER AUTOMATIK ---
+            if (document.getElementById('current-year')) {
+                document.getElementById('current-year').textContent = new Date().getFullYear();
+            }
+            if (document.getElementById('footer-company-name')) {
+                document.getElementById('footer-company-name').textContent = this.state.settings.company_name || '';
+            }
+            if (document.getElementById('footer-company-reg')) {
+                document.getElementById('footer-company-reg').textContent = this.state.settings.company_reg ? `(${this.state.settings.company_reg})` : '';
+            }
+            // --- TAMAT KOD FOOTER AUTOMATIK ---
 
             const ptRate = parseFloat(this.state.settings.pt_redeem_value) || 0.10;
             const ptStar = parseInt(this.state.settings.pt_reward_star) || 1;
