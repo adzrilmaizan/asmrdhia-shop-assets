@@ -7,7 +7,7 @@ const SETTING = {
             const resSettings = await fetch(this.workerURL + "?action=get_shop_settings&_t=" + Date.now()).then(r=>r.json());
             if (resSettings.status === 'success') this.state.settings = resSettings.data || {};
 
-            const keys = ['shop_name', 'company_name', 'company_reg', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'bayarcash_token', 'bayarcash_portal', 'bayarcash_active', 'bayarcash_channel', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
+            const keys = ['shop_name', 'company_name', 'company_reg', 'shop_logo', 'shop_url', 'shop_phone', 'shop_address', 'shop_postcode', 'bayarcash_token', 'bayarcash_portal', 'bayarcash_active', 'bayarcash_channel', 'bayarcash_webhook_secret', 'pt_redeem_value', 'pt_reward_star', 'pt_reward_comment', 'pt_reward_long', 'ship_wm_base', 'ship_wm_weight', 'ship_wm_add', 'ship_em_base', 'ship_em_weight', 'ship_em_add', 'telegram_bot_token', 'telegram_chat_id'];
             
             keys.forEach(k => { 
                 if (this.state.settings[k] !== undefined && document.getElementById(k)) {
