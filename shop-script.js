@@ -461,6 +461,16 @@ const SHOP = {
         const varDiv = document.getElementById('dm-var-section'), varList = document.getElementById('dm-var-list');
         varList.innerHTML = '';
         
+        // KAWALAN UNTUK PRODUK DIGITAL - Sorok butang + / -
+        const qtyWrap = document.querySelector('.dm-qty-wrap');
+        if (p.is_digital === 1) {
+            this.state.modalQty = 1;
+            document.getElementById('dm-qty-display').innerText = 1;
+            if (qtyWrap) qtyWrap.style.display = 'none';
+        } else {
+            if (qtyWrap) qtyWrap.style.display = 'flex';
+        }
+
         this.state.currentSelection = null; 
         this.state.modalQty = 1; 
         document.getElementById('dm-qty-display').innerText = 1;
@@ -590,8 +600,15 @@ const SHOP = {
         const exist = this.state.cart.find(x => x.cartId === cartId);
         const qtyToAdd = customQty !== null ? customQty : this.state.modalQty;
 
-        if(exist) exist.qty += qtyToAdd; 
-        else this.state.cart.push({ cartId, id, name, price, img: p.image, weight, qty: qtyToAdd });
+        if(exist) {
+            if (p.is_digital === 1) {
+                this.showToast('Item digital hanya boleh dibeli 1 kuantiti.', 'info');
+                return;
+            }
+            exist.qty += qtyToAdd; 
+        } else {
+            this.state.cart.push({ cartId, id, name, price, img: p.image, weight, qty: qtyToAdd });
+        }
         
         this.saveCart(); 
         this.showToast('Telah masuk ke bakul!');
@@ -615,6 +632,23 @@ const SHOP = {
             let rawImgUrl = mediaArr.length > 0 ? mediaArr[0] : '';
             const finalImg = rawImgUrl ? (this.getYoutubeThumbnail(rawImgUrl) || rawImgUrl) : 'https://placehold.co/400?text=No+Img';
             
+            const prod = this.state.products.find(x => x.id == i.id);
+            const isDigitalItem = prod && prod.is_digital === 1;
+
+            let qtyControls = '';
+            if (isDigitalItem) {
+                qtyControls = `
+                    <span class="text-xs font-bold text-purple-400 bg-purple-500/10 px-2 py-1 rounded">DIGITAL</span>
+                    <button onclick="SHOP.changeQty('${i.cartId}', -1)" class="w-6 h-6 flex items-center justify-center font-bold text-red-400 hover:text-red-300 ml-2" title="Buang Item"><i class="ri-delete-bin-line"></i></button>
+                `;
+            } else {
+                qtyControls = `
+                    <button onclick="SHOP.changeQty('${i.cartId}',-1)" class="w-5 h-5 flex items-center justify-center font-bold text-gray-400 hover:text-white">-</button>
+                    <span class="text-xs font-bold text-white w-3 text-center">${i.qty}</span>
+                    <button onclick="SHOP.changeQty('${i.cartId}',1)" class="w-5 h-5 flex items-center justify-center font-bold text-gray-400 hover:text-white">+</button>
+                `;
+            }
+
             list.innerHTML += `
             <div class="flex gap-4 bg-[var(--bg-card)] p-3 rounded-2xl border border-white/5 shadow-sm">
                 <img src="${finalImg}" class="w-16 h-16 object-cover rounded-xl bg-gray-800" loading="lazy">
@@ -622,10 +656,8 @@ const SHOP = {
                     <div class="text-xs font-medium text-gray-200 line-clamp-2 leading-snug">${i.name}</div>
                     <div class="flex items-center justify-between mt-1">
                         <div class="text-sm text-white font-bold">RM${i.price.toFixed(2)}</div>
-                        <div class="flex items-center gap-3 bg-[var(--bg-input)] rounded-lg px-2 py-0.5">
-                            <button onclick="SHOP.changeQty('${i.cartId}',-1)" class="w-5 h-5 flex items-center justify-center font-bold text-gray-400 hover:text-white">-</button>
-                            <span class="text-xs font-bold text-white w-3 text-center">${i.qty}</span>
-                            <button onclick="SHOP.changeQty('${i.cartId}',1)" class="w-5 h-5 flex items-center justify-center font-bold text-gray-400 hover:text-white">+</button>
+                        <div class="flex items-center gap-2 bg-[var(--bg-input)] rounded-lg px-2 py-0.5">
+                            ${qtyControls}
                         </div>
                     </div>
                 </div>
