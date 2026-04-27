@@ -24,7 +24,6 @@ const SHOP = {
         reviewOrder: null, reviewName: null, reviewItemsData: []
     },
 
-    // --- KOD BARU DITAMBAH DI SINI ---
     trackView: async function(productId) {
         if (!productId) return;
         fetch(`${WORKER_URL}`, {
@@ -49,7 +48,6 @@ const SHOP = {
             })
         }).catch(err => console.debug('[click track] gagal:', err));
     },
-    // --- TAMAT KOD BARU ---
     
     showToast(title, icon = 'success') {
         Swal.fire({ toast: true, position: 'top', icon: icon, title: title, showConfirmButton: false, timer: 2000, background: '#1e2329', color: '#fff' });
@@ -77,7 +75,6 @@ const SHOP = {
                 this.state.settings = set.data || {};
             }
             
-           // --- MULA UPDATE LOGO & NAMA KEDAI ---
             const brandNameEl = document.getElementById('shop-brand-name');
             const brandLogoEl = document.getElementById('shop-brand-logo');
 
@@ -86,17 +83,14 @@ const SHOP = {
             }
 
             if(this.state.settings.shop_logo && this.state.settings.shop_logo.trim() !== "" && brandLogoEl) {
-                // Kalau ada URL logo: Sembunyikan teks, tunjuk logo
                 brandNameEl.classList.add('hidden');
                 brandLogoEl.src = this.state.settings.shop_logo;
                 brandLogoEl.classList.remove('hidden');
             } else if(brandNameEl && brandLogoEl) {
-                // Kalau tiada URL logo: Tunjuk teks semula, sembunyikan kotak logo
                 brandNameEl.classList.remove('hidden');
                 brandLogoEl.classList.add('hidden');
             }
-            // --- TAMAT UPDATE LOGO & NAMA KEDAI ---
-            // --- MULA KOD FOOTER AUTOMATIK ---
+
             if (document.getElementById('current-year')) {
                 document.getElementById('current-year').textContent = new Date().getFullYear();
             }
@@ -106,7 +100,6 @@ const SHOP = {
             if (document.getElementById('footer-company-reg')) {
                 document.getElementById('footer-company-reg').textContent = this.state.settings.company_reg ? `(${this.state.settings.company_reg})` : '';
             }
-            // --- TAMAT KOD FOOTER AUTOMATIK ---
 
             const ptRate = parseFloat(this.state.settings.pt_redeem_value) || 0.10;
             const ptStar = parseInt(this.state.settings.pt_reward_star) || 1;
@@ -527,10 +520,8 @@ const SHOP = {
                      return;
                 }
 
-                // --- KOD BARU DITAMBAH DI SINI ---
                 const clickType = variations.length > 0 ? 'detail_add_with_var' : 'detail_add';
                 SHOP.trackClick(p.id, clickType);
-                // --- TAMAT KOD BARU ---
                 
                 this.addToCart(p.id, this.state.currentSelection, c.discount); 
                 this.closeModal(); 
@@ -686,7 +677,6 @@ const SHOP = {
             ptRow.classList.add('hidden');
         }
 
-        // --- PENGIRAAN BARU UNTUK UI TROLI DENGAN FPX ---
         let baseTotal = sub - disc - ptDiscAmount;
         let isBayarcashActive = this.state.settings.bayarcash_active !== '0';
         let fpxFee = (isBayarcashActive && baseTotal > 0) ? 1.00 : 0;
@@ -841,10 +831,8 @@ const SHOP = {
 
         const ship = isAllDigital ? 0 : (this.calculateShipping() || 0);
         
-        // PENGIRAAN BASE TOTAL SEBENAR
         let baseTotal = (sub - disc - ptDiscAmount + ship);
 
-        // KIRAAN FPX FEE BAYARCASH
         let isBayarcashActive = this.state.settings.bayarcash_active !== '0';
         let fpxFee = (isBayarcashActive && baseTotal > 0) ? 1.00 : 0;
 
@@ -878,10 +866,8 @@ const SHOP = {
         const finalGrand = isNaN(baseTotal) ? 0 : baseTotal;
         const displayTotal = finalGrand + fpxFee;
         
-        // PAPAR GRAND TOTAL TERMASUK RM1 (Supaya Pelanggan Tak Terkejut)
         document.getElementById('co-grand-total').innerText = `RM${Math.max(0, displayTotal).toFixed(2)}`;
         
-        // HANTAR 'displayTotal' (TERMASUK CAJ RM1) KE FUNGSI PROCESS ORDER!
         return { sub, disc, ptDiscAmount, ship, total: displayTotal, isAllDigital };
     },
 
@@ -1091,41 +1077,24 @@ const SHOP = {
         };
         
         try {
-
-            const res = await fetch(WORKER_URL, { 
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' }, 
-                body: JSON.stringify(payload) 
-            }).then(r => r.json());
-            
-            if (res.status === 'success' && res.payment_url) {
-                // Simpan data untuk resit sebelum redirect
+            const res = await fetch(WORKER_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r=>r.json());
+            if(res.status==='success' && res.payment_url) { 
+                
+                // SIMPAN DATA SEBELUM REDIRECT
                 localStorage.setItem('pending_order_total', totals.total);
                 localStorage.setItem('pending_order_cart', JSON.stringify(this.state.cart));
-                window.location.href = res.payment_url;
+                
+                window.location.href = res.payment_url; 
             } else {
-                Swal.fire({
-                    title: 'Transaksi Ditolak', 
-                    text: res.msg || 'Sistem menolak permintaan anda.', 
-                    icon: 'error', 
-                    background: '#1e2329', 
-                    color: '#fff'
-                }); 
-                btn.disabled = false; 
-                btn.innerHTML = ogText; 
+                Swal.fire({title:'Transaksi Ditolak', text:res.msg || 'Sistem menolak permintaan anda.', icon:'error', background: '#1e2329', color: '#fff'}); 
+                btn.disabled = false; btn.innerHTML = ogText; 
             }
         } catch(e) { 
-            Swal.fire({
-                title: 'Connection Error', 
-                text: 'Please check your internet', 
-                icon: 'error', 
-                background: '#1e2329', 
-                color: '#fff'
-            }); 
-            btn.disabled = false; 
-            btn.innerHTML = ogText; 
+            Swal.fire({title:'Connection Error', text:'Please check your internet', icon:'error', background: '#1e2329', color: '#fff'}); 
+            btn.disabled = false; btn.innerHTML = ogText; 
         }
     },
+    
     applyCoupon() {
         const btn = document.getElementById('btn-apply-coupon');
         const input = document.getElementById('coupon-input');
@@ -1179,174 +1148,200 @@ const SHOP = {
     checkPaymentStatus() {
         const p = new URLSearchParams(window.location.search);
         
-        // PATCH: Bayarcash guna 'status=3', 'order_number' dan 'id' untuk Return URL
         const isSuccess = p.get('status_id') === '1' || p.get('status') === '3' || p.get('status') === 'successful';
+        const hasStatus = p.has('status_id') || p.has('status'); 
         
         if(isSuccess) { 
             const orderId = p.get('order_number') || p.get('order_id') || p.get('refno') || 'N/A';
             const transactionId = p.get('transaction_id') || p.get('id') || 'N/A';
-            
-            // Selamatkan data troli untuk kegunaan resit
-            const savedCart = localStorage.getItem('asmr_cart');
-            let cartData = [];
-            let itemsHtml = '';
-            let isDigitalOnly = false;
-            let grandTotal = 0; // Tambah variable untuk simpan jumlah
-            
-            if (savedCart) {
-                try {
-                    cartData = JSON.parse(savedCart);
-                    if (cartData && cartData.length > 0) {
-                        itemsHtml = '<div class="text-left mt-4 mb-2"><strong class="text-xs text-gray-400 uppercase tracking-wider">Ringkasan Pesanan:</strong><ul class="mt-2 space-y-2">';
-                        cartData.forEach(item => {
-                            const itemTotal = (item.price * item.qty);
-                            grandTotal += itemTotal;
-                            itemsHtml += `<li class="text-sm text-gray-200 flex justify-between border-b border-gray-700/50 pb-2"><span class="truncate pr-2">${item.name} <span class="text-emerald-400 text-xs ml-1">x${item.qty}</span></span><span class="text-emerald-300 font-mono">RM${itemTotal.toFixed(2)}</span></li>`;
-                        });
-                        itemsHtml += '</ul></div>';
-                        
-                        const hasPhysical = cartData.some(item => {
-                             const prod = this.state.products.find(x => x.id == item.id);
-                             return prod && prod.is_digital !== 1;
-                        });
-                        isDigitalOnly = !hasPhysical;
-                    }
-                } catch(e) { console.error("Ralat baca troli:", e); }
-            }
+            
+            // TARIK DATA DARI LOCALSTORAGE PENDING ORDER
+            const savedCart = localStorage.getItem('pending_order_cart') || localStorage.getItem('asmr_cart');
+            const savedTotal = localStorage.getItem('pending_order_total');
+            
+            let cartData = [];
+            let itemsHtml = '';
+            let isDigitalOnly = false;
+            let grandTotal = savedTotal ? parseFloat(savedTotal) : 0; 
+            
+            if (savedCart) {
+                try {
+                    cartData = JSON.parse(savedCart);
+                    if (cartData && cartData.length > 0) {
+                        itemsHtml = '<div class="text-left mt-4 mb-2"><strong class="text-xs text-gray-400 uppercase tracking-wider">Ringkasan Pesanan:</strong><ul class="mt-2 space-y-2">';
+                        let calculatedTotal = 0;
+                        cartData.forEach(item => {
+                            const itemTotal = (item.price * item.qty);
+                            calculatedTotal += itemTotal;
+                            itemsHtml += `<li class="text-sm text-gray-200 flex justify-between border-b border-gray-700/50 pb-2"><span class="truncate pr-2">${item.name} <span class="text-emerald-400 text-xs ml-1">x${item.qty}</span></span><span class="text-emerald-300 font-mono">RM${itemTotal.toFixed(2)}</span></li>`;
+                        });
+                        itemsHtml += '</ul></div>';
+                        
+                        if (grandTotal === 0) grandTotal = calculatedTotal; 
+                        
+                        const hasPhysical = cartData.some(item => {
+                             const prod = this.state.products.find(x => x.id == item.id);
+                             return prod && prod.is_digital !== 1;
+                        });
+                        isDigitalOnly = !hasPhysical;
+                    }
+                } catch(e) { console.error("Ralat baca troli:", e); }
+            }
 
-            let extraMessage = isDigitalOnly 
-                ? '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-mail-send-line"></i> Sila semak emel anda untuk salinan resit dan butiran pesanan sebentar lagi.</div>'
+            let extraMessage = isDigitalOnly 
+                ? '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-mail-send-line"></i> Sila semak emel anda untuk salinan resit dan pautan akses sebentar lagi.</div>'
                 : '<div class="mt-4 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-xs text-emerald-300"><i class="ri-truck-line"></i> Pesanan anda sedang diproses. Kami akan kemaskini status penghantaran tidak lama lagi.</div>';
 
-            window.history.replaceState({},'',window.location.pathname); 
-            
-            Swal.fire({
-                icon: 'success',
-                title: 'Bayaran Berjaya!',
-                html: `
-                    <div class="text-sm text-gray-300 mb-2">Terima kasih atas pembelian anda.</div>
-                    <div class="bg-[#2a3038] p-4 rounded-xl text-left border border-white/5 shadow-inner">
-                        <div class="flex justify-between mb-1"><span class="text-gray-400 text-xs">No. Pesanan:</span> <span class="text-white font-mono text-xs">#${orderId.slice(-6)}</span></div>
-                        <div class="flex justify-between"><span class="text-gray-400 text-xs">No. Transaksi (Bank):</span> <span class="text-white font-mono text-xs">${transactionId}</span></div>
-                        ${itemsHtml}
-                        <div class="flex justify-between mt-3 pt-2 border-t border-gray-600"><span class="text-gray-400 text-sm font-bold">Jumlah Dibayar:</span> <span class="text-emerald-400 font-bold text-sm">RM${grandTotal.toFixed(2)}</span></div>
-                    </div>
-                    ${extraMessage}
-                `,
-                showCancelButton: true,
-                confirmButtonText: 'Tutup',
-                cancelButtonText: '<i class="ri-download-2-line"></i> Simpan Resit',
-                confirmButtonColor: '#374151', 
-                cancelButtonColor: '#10b981', 
-                background: '#1e2329', 
-                color: '#fff',
-                customClass: { htmlContainer: 'text-left' }
-            }).then((result) => {
-                // Jika butang "Simpan Resit" ditekan
-                if (result.dismiss === Swal.DismissReason.cancel) {
-                    this.printReceipt(orderId, transactionId, cartData, grandTotal);
-                }
-            }); 
-            
-            // KOSONGKAN TROLI DI SINI SAHAJA SELEPAS NOTIFIKASI KELUAR
-            localStorage.removeItem('asmr_cart'); 
-            this.state.cart = []; 
-            this.updateCartUI(); 
-        }
-    },
-    
-   printReceipt(orderId, transactionId, cartData, grandTotal) {
+            window.history.replaceState({},'',window.location.pathname); 
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Bayaran Berjaya!',
+                html: `
+                    <div class="text-sm text-gray-300 mb-2">Terima kasih atas pembelian anda.</div>
+                    <div class="bg-[#2a3038] p-4 rounded-xl text-left border border-white/5 shadow-inner">
+                        <div class="flex justify-between mb-1"><span class="text-gray-400 text-xs">No. Pesanan:</span> <span class="text-white font-mono text-xs">#${orderId.slice(-6)}</span></div>
+                        <div class="flex justify-between"><span class="text-gray-400 text-xs">No. Transaksi:</span> <span class="text-white font-mono text-xs">${transactionId}</span></div>
+                        ${itemsHtml}
+                        <div class="flex justify-between mt-3 pt-2 border-t border-gray-600"><span class="text-gray-400 text-sm font-bold">Jumlah Dibayar:</span> <span class="text-emerald-400 font-bold text-sm">RM${grandTotal.toFixed(2)}</span></div>
+                    </div>
+                    ${extraMessage}
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Tutup',
+                cancelButtonText: '<i class="ri-download-2-line"></i> Simpan Resit',
+                confirmButtonColor: '#374151', 
+                cancelButtonColor: '#10b981', 
+                background: '#1e2329', 
+                color: '#fff',
+                customClass: { htmlContainer: 'text-left' }
+            }).then(async (result) => {
+                if (result.dismiss === Swal.DismissReason.cancel) {
+                    await this.printReceipt(orderId, transactionId, cartData, grandTotal);
+                } else {
+                    // Bersihkan jika pelanggan terus tutup tanpa muat turun
+                    localStorage.removeItem('pending_order_total');
+                    localStorage.removeItem('pending_order_cart');
+                }
+            }); 
+            
+            // KOSONGKAN TROLI SELEPAS NOTIFIKASI DIPAPARKAN
+            localStorage.removeItem('asmr_cart'); 
+            this.state.cart = []; 
+            this.updateCartUI(); 
+            
+        } else if (hasStatus && !isSuccess) {
+            // JIKA BAYARAN GAGAL / CANCEL / TAK LEPAS TAC
+            window.history.replaceState({},'',window.location.pathname); 
+            Swal.fire({
+                icon: 'error',
+                title: 'Bayaran Tidak Berjaya',
+                text: 'Transaksi anda telah dibatalkan atau ditolak oleh pihak bank. Sila cuba sebentar lagi.',
+                background: '#1e2329', 
+                color: '#fff',
+                confirmButtonColor: '#ef4444'
+            });
+        }
+    },
+    
+    async printReceipt(orderId, transactionId, cartData, grandTotal) {
         if (!cartData || cartData.length === 0) {
             this.showToast('Gagal memuat turun resit: Tiada data pesanan.', 'error');
-            return;
+            return false;
         }
         
         let itemsTr = '';
-        let calculatedTotal = 0;
-
         cartData.forEach(item => {
             const itemTotal = item.price * item.qty;
-            calculatedTotal += itemTotal;
             itemsTr += `
                 <tr>
-                    <td>
-                        <div class="item-name">${item.name}</div>
-                        <div class="item-qty">RM${item.price.toFixed(2)} x ${item.qty}</div>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6;">
+                        <div style="font-weight: 600; color: #1f2937; font-size: 13px;">${item.name}</div>
+                        <div style="font-size: 11px; color: #6b7280;">RM${item.price.toFixed(2)} x ${item.qty}</div>
                     </td>
-                    <td>RM${itemTotal.toFixed(2)}</td>
+                    <td style="padding: 10px 0; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 600; font-size: 13px;">RM${itemTotal.toFixed(2)}</td>
                 </tr>
             `;
         });
 
-        const finalTotal = grandTotal || calculatedTotal;
+        const finalTotal = grandTotal || 0;
         const shopName = document.getElementById('shop-brand-name') ? document.getElementById('shop-brand-name').innerText : 'Kedai Online';
         const dateStr = new Date().toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-        const printWindow = window.open('', '_blank', 'width=450,height=700');
-        
         const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Resit Pesanan #${orderId.slice(-6)}</title>
-                <style>
-                    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
-                    body { font-family: 'Plus Jakarta Sans', sans-serif; color: #111827; background: #f3f4f6; margin: 0; padding: 20px; display: flex; justify-content: center; }
-                    .receipt { background: #fff; width: 100%; max-width: 380px; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
-                    .header { text-align: center; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px; margin-bottom: 20px; }
-                    .header h2 { margin: 0 0 5px 0; font-size: 22px; font-weight: 700; color: #111827; }
-                    .header p { margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-                    .info { margin-bottom: 20px; }
-                    .info-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 8px; }
-                    .info-row span:first-child { color: #6b7280; }
-                    .info-row span:last-child { font-weight: 600; color: #111827; }
-                    .table { width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px; }
-                    .table td { padding: 12px 0; border-bottom: 1px solid #f3f4f6; vertical-align: top; }
-                    .table td:last-child { text-align: right; font-weight: 600; }
-                    .item-name { font-weight: 600; color: #1f2937; margin-bottom: 4px; line-height: 1.3; }
-                    .item-qty { font-size: 12px; color: #6b7280; }
-                    .total-row { display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #e5e7eb; padding-top: 15px; font-size: 18px; font-weight: 700; }
-                    .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #9ca3af; line-height: 1.5; }
-                    @media print {
-                        body { background: #fff; padding: 0; display: block; }
-                        .receipt { box-shadow: none; padding: 0; max-width: 100%; }
-                        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    }
-                </style>
-            </head>
-            <body>
-                <div class="receipt">
-                    <div class="header">
-                        <h2>${shopName}</h2>
-                        <p>Resit Pembelian</p>
-                    </div>
-                    <div class="info">
-                        <div class="info-row"><span>No. Pesanan:</span> <span>#${orderId.slice(-6)}</span></div>
-                        <div class="info-row"><span>No. Transaksi:</span> <span>${transactionId}</span></div>
-                        <div class="info-row"><span>Tarikh:</span> <span>${dateStr}</span></div>
-                    </div>
-                    <table class="table">
-                        <tbody>${itemsTr}</tbody>
-                    </table>
-                    <div class="total-row">
-                        <span>Jumlah Dibayar:</span>
-                        <span style="color: #10b981;">RM${finalTotal.toFixed(2)}</span>
-                    </div>
-                    <div class="footer">
-                        <strong>Terima kasih atas sokongan anda!</strong><br>
-                        Sila simpan resit ini untuk rujukan.
-                    </div>
+            <div id="pdf-receipt-content" style="padding: 30px; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; color: #111827; background: #fff; width: 100%; max-width: 400px; margin: 0 auto; box-sizing: border-box;">
+                <div style="text-align: center; border-bottom: 2px dashed #e5e7eb; padding-bottom: 20px; margin-bottom: 20px;">
+                    <h2 style="margin: 0 0 5px 0; font-size: 22px; color: #111827;">${shopName}</h2>
+                    <p style="margin: 0; font-size: 12px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; font-weight: bold;">Resit Pembelian</p>
                 </div>
-                <script>
-                    window.onload = function() { setTimeout(() => { window.print(); }, 500); }
-                </script>
-                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-            </body>
-            </html>
+                <div style="margin-bottom: 20px; font-size: 12px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #6b7280;">No. Pesanan:</span> <span style="font-weight: bold;">#${orderId.slice(-6)}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #6b7280;">No. Transaksi:</span> <span style="font-weight: bold;">${transactionId}</span></div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;"><span style="color: #6b7280;">Tarikh:</span> <span style="font-weight: bold;">${dateStr}</span></div>
+                </div>
+                <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <tbody>${itemsTr}</tbody>
+                </table>
+                <div style="display: flex; justify-content: space-between; align-items: center; border-top: 2px solid #e5e7eb; padding-top: 15px; font-size: 16px; font-weight: bold;">
+                    <span>Jumlah Dibayar:</span>
+                    <span style="color: #10b981;">RM${finalTotal.toFixed(2)}</span>
+                </div>
+                <div style="text-align: center; margin-top: 40px; font-size: 11px; color: #9ca3af;">
+                    <strong>Terima kasih atas sokongan anda!</strong><br>Sila simpan resit ini untuk rujukan.
+                </div>
+            </div>
         `;
 
-        printWindow.document.write(html);
-        printWindow.document.close();
+        // FALLBACK: Jika html2pdf tiada/gagal load, guna window.print biasa
+        if (typeof html2pdf === 'undefined') {
+            this.showToast('Sistem PDF tiada, membuka cetakan biasa...', 'info');
+            const printWindow = window.open('', '_blank', 'width=450,height=700');
+            printWindow.document.write(`
+                <html>
+                <head><title>Resit Pesanan #${orderId.slice(-6)}</title></head>
+                <body style="background:#f3f4f6; padding:20px; display:flex; justify-content:center;">
+                    ${html}
+                    <script>window.onload = function() { setTimeout(() => { window.print(); }, 500); }</script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            localStorage.removeItem('pending_order_total');
+            localStorage.removeItem('pending_order_cart');
+            return true;
+        }
+
+        const container = document.createElement('div');
+        container.innerHTML = html;
+        container.style.position = 'absolute';
+        container.style.left = '-9999px';
+        document.body.appendChild(container);
+
+        this.showToast('Memuat turun resit...', 'info');
+
+        const element = document.getElementById('pdf-receipt-content');
+        const opt = {
+            margin: 0.5,
+            filename: 'Resit_Order_' + orderId.slice(-6) + '.pdf',
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'in', format: 'a5', orientation: 'portrait' }
+        };
+        
+        try {
+            await html2pdf().set(opt).from(element).save();
+            document.body.removeChild(container);
+            
+            // BERSIHKAN LOCALSTORAGE SELEPAS SIAP PDF
+            localStorage.removeItem('pending_order_total');
+            localStorage.removeItem('pending_order_cart');
+            return true;
+        } catch (e) {
+            console.error('Ralat PDF:', e);
+            document.body.removeChild(container);
+            this.showToast('Ralat memuat turun PDF', 'error');
+            return false;
+        }
     }
 };
 document.addEventListener('DOMContentLoaded', () => SHOP.init());
