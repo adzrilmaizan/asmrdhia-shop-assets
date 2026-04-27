@@ -1091,16 +1091,39 @@ const SHOP = {
         };
         
         try {
-            const res = await fetch(WORKER_URL, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) }).then(r=>r.json());
-            if(res.status==='success' && res.payment_url) { 
-                window.location.href = res.payment_url; 
-            } else {
-                Swal.fire({title:'Transaksi Ditolak', text:res.msg || 'Sistem menolak permintaan anda.', icon:'error', background: '#1e2329', color: '#fff'}); 
-                btn.disabled = false; btn.innerHTML = ogText; 
+
+            const res = await fetch(WORKER_URL, { 
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify(payload) 
+            }).then(r => r.json());
+            
+            if (res.status === 'success' && res.payment_url) {
+                // Simpan data untuk resit sebelum redirect
+                localStorage.setItem('pending_order_total', totals.total);
+                localStorage.setItem('pending_order_cart', JSON.stringify(this.state.cart));
+                window.location.href = res.payment_url;
+            } else {
+                Swal.fire({
+                    title: 'Transaksi Ditolak', 
+                    text: res.msg || 'Sistem menolak permintaan anda.', 
+                    icon: 'error', 
+                    background: '#1e2329', 
+                    color: '#fff'
+                }); 
+                btn.disabled = false; 
+                btn.innerHTML = ogText; 
             }
         } catch(e) { 
-            Swal.fire({title:'Connection Error', text:'Please check your internet', icon:'error', background: '#1e2329', color: '#fff'}); 
-            btn.disabled = false; btn.innerHTML = ogText; 
+            Swal.fire({
+                title: 'Connection Error', 
+                text: 'Please check your internet', 
+                icon: 'error', 
+                background: '#1e2329', 
+                color: '#fff'
+            }); 
+            btn.disabled = false; 
+            btn.innerHTML = ogText; 
         }
     },
     applyCoupon() {
@@ -1317,6 +1340,7 @@ const SHOP = {
                 <script>
                     window.onload = function() { setTimeout(() => { window.print(); }, 500); }
                 </script>
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
             </body>
             </html>
         `;
