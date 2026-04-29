@@ -1187,6 +1187,17 @@ const SHOP = {
             const orderId = p.get('order_number') || p.get('order_id') || p.get('refno') || 'N/A';
             const transactionId = p.get('transaction_id') || p.get('id') || 'N/A';
             
+            // [💥 FIX DITAMBAH DI SINI 💥]
+            // Paksa sistem semak dengan backend supaya DB bertukar jadi PAID & stok dipotong
+            // transactionId ini biasanya merujuk kepada payment_ref / intent_id
+            if (transactionId !== 'N/A' && transactionId !== '') {
+                fetch(`${WORKER_URL}?action=check_payment_status&bill_code=${encodeURIComponent(transactionId)}`)
+                    .then(r => r.json())
+                    .then(res => console.log("[Auto-Check] Bayaran disahkan DB:", res))
+                    .catch(e => console.error("[Auto-Check] Ralat DB:", e));
+            }
+            // ============================================
+
             // TARIK DATA DARI LOCALSTORAGE PENDING ORDER
             const savedCart = localStorage.getItem('pending_order_cart') || localStorage.getItem('asmr_cart');
             const savedTotal = localStorage.getItem('pending_order_total');
@@ -1251,19 +1262,16 @@ const SHOP = {
                 if (result.dismiss === Swal.DismissReason.cancel) {
                     await this.printReceipt(orderId, transactionId, cartData, grandTotal);
                 } else {
-                    // Bersihkan jika pelanggan terus tutup tanpa muat turun
                     localStorage.removeItem('pending_order_total');
                     localStorage.removeItem('pending_order_cart');
                 }
             }); 
             
-            // KOSONGKAN TROLI SELEPAS NOTIFIKASI DIPAPARKAN
             localStorage.removeItem('asmr_cart'); 
             this.state.cart = []; 
             this.updateCartUI(); 
             
         } else if (hasStatus && !isSuccess) {
-            // JIKA BAYARAN GAGAL / CANCEL / TAK LEPAS TAC
             window.history.replaceState({},'',window.location.pathname); 
             Swal.fire({
                 icon: 'error',
