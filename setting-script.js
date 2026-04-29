@@ -87,7 +87,7 @@ const SETTING = {
             
             if (!bToken) return "Sila masukkan Token BayarCash jika anda mahu mengaktifkannya.";
             if (!bPortal) return "Sila masukkan Portal ID BayarCash.";
-            if (!bWebhook) return "Sila masukkan Webhook Secret BayarCash.";
+            
         }
         
         const channel = document.getElementById('bayarcash_channel')?.value;
